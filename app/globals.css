@@ -3,11 +3,31 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* Brand Colors */
+  --color-primary: #0066cc; /* Ocean Blue */
+  --color-secondary: #ff6b6b; /* Coral */
+  --color-accent: #20b2aa; /* Teal */
+  --color-background-light: #f8f9fa; /* Background Light */
+  --color-surface: #ffffff; /* Surface White */
+  --color-dark: #2c3e50; /* Dark Text */
+  --color-gray: #6c757d; /* Gray Text */
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+
+  /* Brand Colors */
+  --color-primary: var(--color-primary);
+  --color-secondary: var(--color-secondary);
+  --color-accent: var(--color-accent);
+  --color-background-light: var(--color-background-light);
+  --color-surface: var(--color-surface);
+  --color-dark: var(--color-dark);
+  --color-gray: var(--color-gray);
+
+  /* Fonts */
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
@@ -20,7 +40,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--foreground);
+  color: var(--background);
   font-family: Arial, Helvetica, sans-serif;
 }
