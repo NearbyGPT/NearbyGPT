@@ -1,5 +1,6 @@
 'use client'
 
+import { FormEvent } from 'react'
 import { Search, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
@@ -22,7 +23,7 @@ export default function MapSearchBar({
 }: MapSearchBarProps) {
   const chatLabel = activeChatName ? `Chatting with ${activeChatName}` : null
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     const trimmedValue = value.trim()
     if (!trimmedValue) return

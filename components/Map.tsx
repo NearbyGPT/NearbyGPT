@@ -2,11 +2,10 @@
 
 import { useEffect, useRef, useState, useMemo } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
-import { useRouter } from 'next/navigation'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import { loadPOIs, MOCK_POIS } from '@/lib/pois'
+import { loadPOIs } from '@/lib/pois'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -56,7 +55,6 @@ const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
 }
 
 export default function Map() {
-  const router = useRouter()
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
 
@@ -136,9 +134,7 @@ export default function Map() {
   }, [searchQuery])
 
   useEffect(() => {
-    if (mapRef.current) return
-
-    if (!mapContainer.current) return
+    if (mapRef.current || !mapContainer.current) return
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -158,9 +154,6 @@ export default function Map() {
       })
     })
 
-    mapRef.current.on('load', () => {
-      setPois(MOCK_POIS)
-    })
   }, [setFlyToLocation])
 
   // ---- Render POIs + layers ----
@@ -244,7 +237,7 @@ export default function Map() {
     map!.on('mouseleave', 'poi-icons', () => {
       map!.getCanvas().style.cursor = ''
     })
-  }, [router, poisGeoJSON, filteredPOIs, setSelectedPOI])
+  }, [poisGeoJSON, filteredPOIs, setSelectedPOI])
 
   return (
     <>
