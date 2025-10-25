@@ -1,67 +1,156 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useMemo } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import { useRouter } from 'next/navigation'
+import MapSearchBar from './MapSearchBar'
+import POICard, { POI } from './POICard'
+import useGeneralStore from '@/store/generalStore'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
-// ---- Mock restaurant data ----
-const mockRestaurants: GeoJSON.FeatureCollection = {
-  type: 'FeatureCollection',
-  features: [
-    {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [29.9187, 31.2001], // Cairo center
-      },
-      properties: {
-        name: 'Koshary El Tahrir',
-      },
-    },
-    {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [29.95, 31.22],
-      },
-      properties: {
-        name: 'Zooba',
-      },
-    },
-    {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [29.93, 31.21],
-      },
-      properties: {
-        name: 'Abou Shakra',
-      },
-    },
-    {
-      type: 'Feature',
-      geometry: {
-        type: 'Point',
-        coordinates: [29.94, 31.23],
-      },
-      properties: {
-        name: 'Felfela',
-      },
-    },
-  ],
-}
+// ---- Mock POI data with icons ----
+const mockPOIs: POI[] = [
+  {
+    id: '1',
+    name: 'Koshary El Tahrir',
+    type: 'Egyptian Restaurant',
+    icon: '🍲',
+    coordinates: [31.2001, 29.9187],
+    address: 'Tahrir Square, Cairo',
+    rating: 4.5,
+    priceLevel: '$',
+    hours: 'Open until 11 PM',
+    description: 'Traditional Egyptian koshary and local dishes',
+  },
+  {
+    id: '2',
+    name: 'Zooba',
+    type: 'Modern Egyptian',
+    icon: '🥙',
+    coordinates: [31.22, 29.95],
+    address: 'Zamalek, Cairo',
+    rating: 4.7,
+    priceLevel: '$$',
+    hours: 'Open until 12 AM',
+    description: 'Contemporary take on traditional Egyptian street food',
+  },
+  {
+    id: '3',
+    name: 'Abou Shakra',
+    type: 'Grill Restaurant',
+    icon: '🥩',
+    coordinates: [31.21, 29.93],
+    address: 'Garden City, Cairo',
+    rating: 4.3,
+    priceLevel: '$$',
+    hours: 'Open until 1 AM',
+    description: 'Famous for grilled meats and kebabs',
+  },
+  {
+    id: '4',
+    name: 'Felfela',
+    type: 'Traditional Egyptian',
+    icon: '🍛',
+    coordinates: [31.23, 29.94],
+    address: 'Downtown Cairo',
+    rating: 4.4,
+    priceLevel: '$',
+    hours: 'Open until 10 PM',
+    description: 'Authentic Egyptian cuisine in a traditional setting',
+  },
+  {
+    id: '5',
+    name: 'Cairo Kitchen',
+    type: 'Cafe',
+    icon: '☕',
+    coordinates: [31.225, 29.955],
+    address: 'Zamalek, Cairo',
+    rating: 4.6,
+    priceLevel: '$$',
+    hours: 'Open until 11 PM',
+    description: 'Cozy cafe with Egyptian and international dishes',
+  },
+  {
+    id: '6',
+    name: 'The Tap West',
+    type: 'Bar & Grill',
+    icon: '🍺',
+    coordinates: [31.208, 29.928],
+    address: 'Maadi, Cairo',
+    rating: 4.5,
+    priceLevel: '$$$',
+    hours: 'Open until 2 AM',
+    description: 'Sports bar with great food and drinks',
+  },
+  {
+    id: '7',
+    name: 'Kazoku',
+    type: 'Japanese Restaurant',
+    icon: '🍱',
+    coordinates: [31.215, 29.935],
+    address: 'Heliopolis, Cairo',
+    rating: 4.8,
+    priceLevel: '$$$',
+    hours: 'Open until 11:30 PM',
+    description: 'Authentic Japanese sushi and ramen',
+  },
+  {
+    id: '8',
+    name: 'Lucille\'s',
+    type: 'American Burger',
+    icon: '🍔',
+    coordinates: [31.205, 29.945],
+    address: 'Mohandiseen, Cairo',
+    rating: 4.6,
+    priceLevel: '$$',
+    hours: 'Open until 12 AM',
+    description: 'Gourmet burgers and American comfort food',
+  },
+]
 
 export default function Map() {
   const router = useRouter()
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
 
-  const [resturants, setResturants] = useState<GeoJSON.FeatureCollection>({
-    type: 'FeatureCollection',
-    features: [],
-  })
+  const selectedPOI = useGeneralStore((s) => s.selectedPOI)
+  const setSelectedPOI = useGeneralStore((s) => s.setSelectedPOI)
+  const searchQuery = useGeneralStore((s) => s.searchQuery)
+  const setSearchQuery = useGeneralStore((s) => s.setSearchQuery)
+  const setFlyToLocation = useGeneralStore((s) => s.setFlyToLocation)
+
+  const [pois, setPois] = useState<POI[]>([])
+
+  // Filter POIs based on search query
+  const filteredPOIs = useMemo(() => {
+    if (!searchQuery.trim()) return pois
+
+    const query = searchQuery.toLowerCase()
+    return pois.filter(
+      (poi) =>
+        poi.name.toLowerCase().includes(query) ||
+        poi.type.toLowerCase().includes(query) ||
+        poi.address?.toLowerCase().includes(query)
+    )
+  }, [pois, searchQuery])
+
+  // Convert POIs to GeoJSON
+  const poisGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
+    return {
+      type: 'FeatureCollection',
+      features: filteredPOIs.map((poi) => ({
+        type: 'Feature',
+        geometry: {
+          type: 'Point',
+          coordinates: poi.coordinates,
+        },
+        properties: {
+          ...poi,
+        },
+      })),
+    }
+  }, [filteredPOIs])
 
   useEffect(() => {
     if (mapRef.current) return
@@ -71,31 +160,40 @@ export default function Map() {
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [29.9187, 31.2001],
-      zoom: 11,
+      center: [31.2001, 29.9187],
+      zoom: 12,
     })
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl())
+    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
+
+    // Set flyToLocation function
+    setFlyToLocation((lng: number, lat: number) => {
+      mapRef.current?.flyTo({
+        center: [lng, lat],
+        zoom: 15,
+        duration: 2000,
+      })
+    })
+
     mapRef.current.on('load', () => {
-      setResturants(mockRestaurants)
+      setPois(mockPOIs)
     })
-  }, [])
+  }, [setFlyToLocation])
 
-  // ---- Render resturants + layers ----
+  // ---- Render POIs + layers ----
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded() || resturants.features.length === 0) return
-    const geoJsonData = resturants
-    const source = map.getSource('resturants') as GeoJSONSource | undefined
+    if (!map || !map.isStyleLoaded() || poisGeoJSON.features.length === 0) return
+    const source = map.getSource('pois') as GeoJSONSource | undefined
 
     if (source) {
-      source.setData(geoJsonData)
+      source.setData(poisGeoJSON)
       map.triggerRepaint()
     } else {
-      map.addSource('resturants', {
+      map.addSource('pois', {
         type: 'geojson',
         generateId: true,
-        data: geoJsonData,
+        data: poisGeoJSON,
         cluster: true,
         clusterMaxZoom: 14,
         clusterRadius: 50,
@@ -105,7 +203,7 @@ export default function Map() {
       map.addLayer({
         id: 'clusters',
         type: 'circle',
-        source: 'resturants',
+        source: 'pois',
         filter: ['has', 'point_count'],
         paint: {
           'circle-color': ['step', ['get', 'point_count'], '#3a761e', 100, '#3a761e', 750, '#3a761e'],
@@ -120,7 +218,7 @@ export default function Map() {
       map.addLayer({
         id: 'cluster-count',
         type: 'symbol',
-        source: 'resturants',
+        source: 'pois',
         filter: ['has', 'point_count'],
         layout: {
           'text-field': ['get', 'point_count_abbreviated'],
@@ -135,33 +233,32 @@ export default function Map() {
         },
       })
 
-      // ---- Load resturant icon ----
-      map.loadImage('/resturant-icon.png', (error, image) => {
-        if (error) throw error
-        if (!image) return
+      // ---- POI circles with icons ----
+      map.addLayer({
+        id: 'poi-circles',
+        type: 'circle',
+        source: 'pois',
+        filter: ['!', ['has', 'point_count']],
+        paint: {
+          'circle-color': '#3a761e',
+          'circle-radius': 20,
+          'circle-stroke-color': '#ffffff',
+          'circle-stroke-width': 3,
+        },
+      })
 
-        if (!map?.hasImage('resturant-icon')) {
-          map?.addImage('resturant-icon', image)
-        }
-
-        map?.addLayer({
-          id: 'resturant-icon',
-          type: 'symbol',
-          source: 'resturants',
-          filter: ['!', ['has', 'point_count']],
-          layout: {
-            'icon-image': 'resturant-icon',
-            'icon-size': 0.2,
-            'icon-allow-overlap': true,
-            'text-field': ['get', 'name'], // Show restaurant name
-            'text-font': ['Lexend Regular', 'Arial Unicode MS Bold'],
-            'text-offset': [0, 1.2],
-            'text-anchor': 'top',
-          },
-          paint: {
-            'text-color': '#111',
-          },
-        })
+      // ---- POI emoji icons ----
+      map.addLayer({
+        id: 'poi-icons',
+        type: 'symbol',
+        source: 'pois',
+        filter: ['!', ['has', 'point_count']],
+        layout: {
+          'text-field': ['get', 'icon'],
+          'text-size': 20,
+          'text-anchor': 'center',
+          'text-allow-overlap': true,
+        },
       })
     }
 
@@ -175,7 +272,7 @@ export default function Map() {
 
       const clusterId = features[0].properties?.cluster_id as number
 
-      ;(mapRef.current?.getSource('resturants') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
+      ;(mapRef.current?.getSource('pois') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
         clusterId,
         (err, zoom) => {
           if (err || zoom == null) return
@@ -193,22 +290,28 @@ export default function Map() {
     mapRef.current?.on('click', 'clusters', clusterHandler)
     mapRef.current?.on('touchend', 'clusters', clusterHandler)
 
-    // ---- Resturant icon navigation ----
-    const resturantClickHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
+    // ---- POI click handler ----
+    const poiClickHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
       const features = mapRef.current?.queryRenderedFeatures(e.point, {
-        layers: ['resturant-icon'],
+        layers: ['poi-circles', 'poi-icons'],
       }) as mapboxgl.GeoJSONFeature[]
 
       if (!features?.length) return
 
       const feature = features[0]
-      // const properties = feature.properties as unknown as Resturant
+      const properties = feature.properties as any
 
-      // router.push(`/resturant/${properties.id}`)
+      // Find the full POI object
+      const poi = filteredPOIs.find((p) => p.id === properties.id)
+      if (poi) {
+        setSelectedPOI(poi)
+      }
     }
 
-    mapRef.current?.on('click', 'resturant-icon', resturantClickHandler)
-    mapRef.current?.on('touchend', 'resturant-icon', resturantClickHandler)
+    mapRef.current?.on('click', 'poi-circles', poiClickHandler)
+    mapRef.current?.on('touchend', 'poi-circles', poiClickHandler)
+    mapRef.current?.on('click', 'poi-icons', poiClickHandler)
+    mapRef.current?.on('touchend', 'poi-icons', poiClickHandler)
 
     // ---- Cursor changes ----
     map!.on('mouseenter', 'clusters', () => {
@@ -217,13 +320,25 @@ export default function Map() {
     map!.on('mouseleave', 'clusters', () => {
       map!.getCanvas().style.cursor = ''
     })
-    map!.on('mouseenter', 'resturant-icon', () => {
+    map!.on('mouseenter', 'poi-circles', () => {
       map!.getCanvas().style.cursor = 'pointer'
     })
-    map!.on('mouseleave', 'resturant-icon', () => {
+    map!.on('mouseleave', 'poi-circles', () => {
       map!.getCanvas().style.cursor = ''
     })
-  }, [router, resturants])
+    map!.on('mouseenter', 'poi-icons', () => {
+      map!.getCanvas().style.cursor = 'pointer'
+    })
+    map!.on('mouseleave', 'poi-icons', () => {
+      map!.getCanvas().style.cursor = ''
+    })
+  }, [router, poisGeoJSON, filteredPOIs, setSelectedPOI])
 
-  return <div ref={mapContainer} style={{ width: '100vw', height: '100vh' }} />
+  return (
+    <>
+      <div ref={mapContainer} style={{ width: '100vw', height: '100vh' }} />
+      <MapSearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search places, types, or areas..." />
+      {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
+    </>
+  )
 }
