@@ -11,6 +11,8 @@ interface GeneralState {
   setSearchQuery: (query: string) => void;
   userLocation: { latitude: number; longitude: number } | null;
   setUserLocation: (location: { latitude: number; longitude: number } | null) => void;
+  activeChatPOI: POI | null;
+  setActiveChatPOI: (poi: POI | null) => void;
 }
 
 const useGeneralStore = create<GeneralState>()(
@@ -24,10 +26,12 @@ const useGeneralStore = create<GeneralState>()(
       setSearchQuery: (query) => set({ searchQuery: query }),
       userLocation: null,
       setUserLocation: (location) => set({ userLocation: location }),
+      activeChatPOI: null,
+      setActiveChatPOI: (poi) => set({ activeChatPOI: poi }),
     }),
     {
       name: "general-store",
-      partialize: (state) => ({}),
+      partialize: () => ({}),
     }
   )
 );

@@ -1,6 +1,8 @@
 'use client'
 
-import { X, MapPin, Clock } from 'lucide-react'
+import { X, MapPin, Clock, MessageCircle } from 'lucide-react'
+import useGeneralStore from '@/store/generalStore'
+import { cn } from '@/lib/utils'
 
 export interface POI {
   id: string
@@ -21,6 +23,19 @@ interface POICardProps {
 }
 
 export default function POICard({ poi, onClose }: POICardProps) {
+  const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
+  const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
+  const isChattingWithPOI = activeChatPOI?.id === poi.id
+
+  const handleChatClick = () => {
+    if (isChattingWithPOI) {
+      setActiveChatPOI(null)
+      return
+    }
+
+    setActiveChatPOI(poi)
+  }
+
   return (
     <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-4">
       <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
@@ -73,9 +88,27 @@ export default function POICard({ poi, onClose }: POICardProps) {
             <p className="text-sm text-gray-600 mt-3 pt-3 border-t">{poi.description}</p>
           )}
 
-          <button className="w-full mt-4 bg-[#0066CC] text-white py-3 rounded-full font-medium hover:bg-[#0052A3] transition-colors">
-            Get Directions
-          </button>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+            <button
+              type="button"
+              onClick={handleChatClick}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-medium transition-colors',
+                isChattingWithPOI
+                  ? 'border-[#0052A3] bg-[#0052A3] text-white hover:bg-[#004482]'
+                  : 'border-[#0066CC] text-[#0066CC] hover:bg-[#E6F0FF]'
+              )}
+            >
+              <MessageCircle className="h-5 w-5" />
+              {isChattingWithPOI ? 'Chatting' : 'Chat'}
+            </button>
+            <button
+              type="button"
+              className="w-full rounded-full bg-[#0066CC] py-3 font-medium text-white transition-colors hover:bg-[#0052A3]"
+            >
+              Get Directions
+            </button>
+          </div>
         </div>
       </div>
     </div>
