@@ -27,7 +27,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
         <div className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#3a761e] flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-[#20B2AA] flex items-center justify-center text-2xl">
                 {poi.icon}
               </div>
               <div>
@@ -73,7 +73,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
             <p className="text-sm text-gray-600 mt-3 pt-3 border-t">{poi.description}</p>
           )}
 
-          <button className="w-full mt-4 bg-[#3a761e] text-white py-3 rounded-full font-medium hover:bg-[#2d5b17] transition-colors">
+          <button className="w-full mt-4 bg-[#0066CC] text-white py-3 rounded-full font-medium hover:bg-[#0052A3] transition-colors">
             Get Directions
           </button>
         </div>

@@ -206,7 +206,7 @@ export default function Map() {
         source: 'pois',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': ['step', ['get', 'point_count'], '#3a761e', 100, '#3a761e', 750, '#3a761e'],
+          'circle-color': ['step', ['get', 'point_count'], '#20B2AA', 100, '#20B2AA', 750, '#20B2AA'],
           'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40],
           'circle-emissive-strength': 1,
           'circle-stroke-color': '#ffffff',
@@ -240,7 +240,7 @@ export default function Map() {
         source: 'pois',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#3a761e',
+          'circle-color': '#20B2AA',
           'circle-radius': 20,
           'circle-stroke-color': '#ffffff',
           'circle-stroke-width': 3,

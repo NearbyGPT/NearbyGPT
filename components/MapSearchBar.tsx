@@ -19,7 +19,7 @@ export default function MapSearchBar({ value, onChange, placeholder = 'Search pl
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder={placeholder}
-          className="pl-10 pr-4 py-6 bg-white shadow-lg border-0 rounded-full text-base focus-visible:ring-2 focus-visible:ring-[#3a761e]"
+          className="pl-10 pr-4 py-6 bg-white shadow-lg border-0 rounded-full text-base focus-visible:ring-2 focus-visible:ring-[#0066CC]"
         />
       </div>
     </div>
