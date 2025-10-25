@@ -9,6 +9,8 @@ interface GeneralState {
   setSelectedPOI: (poi: POI | null) => void;
   searchQuery: string;
   setSearchQuery: (query: string) => void;
+  activeChatPOI: POI | null;
+  setActiveChatPOI: (poi: POI | null) => void;
 }
 
 const useGeneralStore = create<GeneralState>()(
@@ -20,10 +22,12 @@ const useGeneralStore = create<GeneralState>()(
       setSelectedPOI: (poi) => set({ selectedPOI: poi }),
       searchQuery: "",
       setSearchQuery: (query) => set({ searchQuery: query }),
+      activeChatPOI: null,
+      setActiveChatPOI: (poi) => set({ activeChatPOI: poi }),
     }),
     {
       name: "general-store",
-      partialize: (state) => ({}),
+      partialize: () => ({}),
     }
   )
 );
