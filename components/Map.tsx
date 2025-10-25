@@ -161,7 +161,7 @@ export default function Map() {
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [31.2001, 29.9187],
-      zoom: 12,
+      zoom: 15,
     })
 
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
@@ -194,43 +194,6 @@ export default function Map() {
         type: 'geojson',
         generateId: true,
         data: poisGeoJSON,
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50,
-      })
-
-      // ---- Cluster circles ----
-      map.addLayer({
-        id: 'clusters',
-        type: 'circle',
-        source: 'pois',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': ['step', ['get', 'point_count'], '#20B2AA', 100, '#20B2AA', 750, '#20B2AA'],
-          'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40],
-          'circle-emissive-strength': 1,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 3,
-        },
-      })
-
-      // ---- Cluster count ----
-      map.addLayer({
-        id: 'cluster-count',
-        type: 'symbol',
-        source: 'pois',
-        filter: ['has', 'point_count'],
-        layout: {
-          'text-field': ['get', 'point_count_abbreviated'],
-          'text-font': ['Lexend Regular', 'Arial Unicode MS Bold'],
-          'text-size': 16,
-          'text-anchor': 'center',
-          'text-offset': [0, 0],
-          'text-allow-overlap': false,
-        },
-        paint: {
-          'text-color': '#ffffff',
-        },
       })
 
       // ---- POI circles with icons ----
@@ -238,7 +201,6 @@ export default function Map() {
         id: 'poi-circles',
         type: 'circle',
         source: 'pois',
-        filter: ['!', ['has', 'point_count']],
         paint: {
           'circle-color': '#20B2AA',
           'circle-radius': 20,
@@ -252,43 +214,17 @@ export default function Map() {
         id: 'poi-icons',
         type: 'symbol',
         source: 'pois',
-        filter: ['!', ['has', 'point_count']],
         layout: {
           'text-field': ['get', 'icon'],
-          'text-size': 20,
+          'text-size': 24,
           'text-anchor': 'center',
           'text-allow-overlap': true,
         },
+        paint: {
+          'text-color': '#ffffff',
+        },
       })
     }
-
-    // ---- Cluster click/tap ----
-    const clusterHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
-      const features = mapRef.current?.queryRenderedFeatures(e.point, {
-        layers: ['clusters'],
-      }) as mapboxgl.GeoJSONFeature[]
-
-      if (!features?.length) return
-
-      const clusterId = features[0].properties?.cluster_id as number
-
-      ;(mapRef.current?.getSource('pois') as mapboxgl.GeoJSONSource).getClusterExpansionZoom(
-        clusterId,
-        (err, zoom) => {
-          if (err || zoom == null) return
-
-          const coordinates = (features[0].geometry as GeoJSON.Point).coordinates as [number, number]
-
-          mapRef.current?.easeTo({
-            center: coordinates,
-            zoom,
-          })
-        }
-      )
-    }
-
-    mapRef.current?.on('click', 'clusters', clusterHandler)
-    mapRef.current?.on('touchend', 'clusters', clusterHandler)
 
     // ---- POI click handler ----
     const poiClickHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
@@ -314,12 +250,6 @@ export default function Map() {
     mapRef.current?.on('touchend', 'poi-icons', poiClickHandler)
 
     // ---- Cursor changes ----
-    map!.on('mouseenter', 'clusters', () => {
-      map!.getCanvas().style.cursor = 'pointer'
-    })
-    map!.on('mouseleave', 'clusters', () => {
-      map!.getCanvas().style.cursor = ''
-    })
     map!.on('mouseenter', 'poi-circles', () => {
       map!.getCanvas().style.cursor = 'pointer'
     })
