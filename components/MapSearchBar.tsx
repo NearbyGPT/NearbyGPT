@@ -1,6 +1,6 @@
 'use client'
 
-import { Search, X } from 'lucide-react'
+import { Search, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
 
 interface MapSearchBarProps {
@@ -9,6 +9,7 @@ interface MapSearchBarProps {
   placeholder?: string
   activeChatName?: string
   onClearChat?: () => void
+  onSubmit?: (value: string) => void
 }
 
 export default function MapSearchBar({
@@ -17,8 +18,17 @@ export default function MapSearchBar({
   placeholder = 'Search places...',
   activeChatName,
   onClearChat,
+  onSubmit,
 }: MapSearchBarProps) {
   const chatLabel = activeChatName ? `Chatting with ${activeChatName}` : null
+
+  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const trimmedValue = value.trim()
+    if (!trimmedValue) return
+
+    onSubmit?.(trimmedValue)
+  }
 
   return (
     <div
@@ -27,33 +37,42 @@ export default function MapSearchBar({
         activeChatName ? 'max-w-2xl' : 'max-w-md'
       )}
     >
-      <div
-        className={cn(
-          'flex items-center gap-3 rounded-full bg-white shadow-xl border border-transparent px-5 transition-all',
-          activeChatName ? 'py-4' : 'py-3.5'
-        )}
-      >
-        <Search className="h-5 w-5 text-[#0066CC]" />
+      <div className="rounded-2xl bg-white shadow-xl border border-transparent px-4 py-4 sm:px-5">
+        <form onSubmit={handleSubmit} className="flex items-center gap-3">
+          <Search className="h-5 w-5 flex-shrink-0 text-[#0066CC]" />
+          <input
+            type="text"
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={chatLabel ? 'Ask this business anything…' : placeholder}
+            className="flex-1 min-w-0 bg-transparent text-base text-gray-700 placeholder:text-gray-400 focus:outline-none"
+          />
+          <button
+            type="submit"
+            className="flex items-center gap-2 rounded-full bg-[#0066CC] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0052A3] focus:outline-none focus:ring-2 focus:ring-[#99C2FF] focus:ring-offset-2 focus:ring-offset-white"
+            aria-label="Send search"
+          >
+            <Send className="h-4 w-4" />
+            <span className="hidden sm:inline">Send</span>
+          </button>
+        </form>
         {chatLabel && (
-          <div className="flex items-center gap-2 rounded-full bg-[#E6F0FF] px-3 py-1 text-sm font-medium text-[#0052A3]">
-            <span className="truncate max-w-[160px] sm:max-w-[220px]">{chatLabel}</span>
-            <button
-              type="button"
-              onClick={onClearChat}
-              className="flex h-6 w-6 items-center justify-center rounded-full text-[#0052A3]/70 transition hover:bg-[#0052A3]/10 hover:text-[#0052A3]"
-              aria-label="Stop chatting with this business"
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
+          <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#E6F0FF] px-3 py-2">
+            <span className="flex-1 text-sm font-medium leading-snug text-[#0052A3] break-words">
+              {chatLabel}
+            </span>
+            {onClearChat && (
+              <button
+                type="button"
+                onClick={onClearChat}
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[#0052A3]/70 transition-colors hover:bg-[#0052A3]/10 hover:text-[#0052A3]"
+                aria-label="Stop chatting with this business"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         )}
-        <input
-          type="text"
-          value={value}
-          onChange={(e) => onChange(e.target.value)}
-          placeholder={chatLabel ? 'Ask this business anything…' : placeholder}
-          className="flex-1 bg-transparent text-base text-gray-700 placeholder:text-gray-400 focus:outline-none"
-        />
       </div>
     </div>
   )
