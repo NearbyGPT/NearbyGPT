@@ -109,6 +109,51 @@ const mockPOIs: POI[] = [
   },
 ]
 
+const getEmojiImageId = (emoji: string) =>
+  `emoji-${
+    Array.from(emoji)
+      .map((char) => char.codePointAt(0)?.toString(16))
+      .filter(Boolean)
+      .join('-')
+  }`
+
+const createEmojiImage = (emoji: string) => {
+  const size = 128
+  const canvas = document.createElement('canvas')
+  canvas.width = size
+  canvas.height = size
+  const context = canvas.getContext('2d')
+
+  if (!context) return null
+
+  context.clearRect(0, 0, size, size)
+  context.font = `${size * 0.75}px "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif`
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(emoji, size / 2, size / 2)
+
+  return {
+    imageData: context.getImageData(0, 0, size, size),
+    pixelRatio: 2,
+  }
+}
+
+const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
+  pois.forEach((poi) => {
+    const iconId = getEmojiImageId(poi.icon)
+
+    if (!map.hasImage(iconId)) {
+      const emojiImage = createEmojiImage(poi.icon)
+
+      if (emojiImage) {
+        map.addImage(iconId, emojiImage.imageData, {
+          pixelRatio: emojiImage.pixelRatio,
+        })
+      }
+    }
+  })
+}
+
 export default function Map() {
   const router = useRouter()
   const mapContainer = useRef<HTMLDivElement | null>(null)
@@ -147,6 +192,7 @@ export default function Map() {
         },
         properties: {
           ...poi,
+          iconImageId: getEmojiImageId(poi.icon),
         },
       })),
     }
@@ -186,6 +232,8 @@ export default function Map() {
     if (!map || !map.isStyleLoaded() || poisGeoJSON.features.length === 0) return
     const source = map.getSource('pois') as GeoJSONSource | undefined
 
+    ensureEmojiImages(map, filteredPOIs)
+
     if (source) {
       source.setData(poisGeoJSON)
       map.triggerRepaint()
@@ -215,13 +263,10 @@ export default function Map() {
         type: 'symbol',
         source: 'pois',
         layout: {
-          'text-field': ['get', 'icon'],
-          'text-size': 24,
-          'text-anchor': 'center',
-          'text-allow-overlap': true,
-        },
-        paint: {
-          'text-color': '#ffffff',
+          'icon-image': ['get', 'iconImageId'],
+          'icon-size': 0.6,
+          'icon-anchor': 'center',
+          'icon-allow-overlap': true,
         },
       })
     }
