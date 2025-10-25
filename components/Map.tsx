@@ -164,6 +164,8 @@ export default function Map() {
   const searchQuery = useGeneralStore((s) => s.searchQuery)
   const setSearchQuery = useGeneralStore((s) => s.setSearchQuery)
   const setFlyToLocation = useGeneralStore((s) => s.setFlyToLocation)
+  const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
+  const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
 
   const [pois, setPois] = useState<POI[]>([])
 
@@ -312,7 +314,13 @@ export default function Map() {
   return (
     <>
       <div ref={mapContainer} style={{ width: '100vw', height: '100vh' }} />
-      <MapSearchBar value={searchQuery} onChange={setSearchQuery} placeholder="Search places, types, or areas..." />
+      <MapSearchBar
+        value={searchQuery}
+        onChange={setSearchQuery}
+        placeholder="Search places, types, or areas..."
+        activeChatName={activeChatPOI?.name}
+        onClearChat={() => setActiveChatPOI(null)}
+      />
       {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
     </>
   )
