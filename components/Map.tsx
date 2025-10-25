@@ -1,11 +1,12 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import { useRouter } from 'next/navigation'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
+import { fetchFilteredPOIs } from '@/lib/poiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -164,29 +165,44 @@ export default function Map() {
   const searchQuery = useGeneralStore((s) => s.searchQuery)
   const setSearchQuery = useGeneralStore((s) => s.setSearchQuery)
   const setFlyToLocation = useGeneralStore((s) => s.setFlyToLocation)
+  const userLocation = useGeneralStore((s) => s.userLocation)
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
 
   const [pois, setPois] = useState<POI[]>([])
+  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
 
-  // Filter POIs based on search query
-  const filteredPOIs = useMemo(() => {
-    if (!searchQuery.trim()) return pois
+  // Fetch POIs from backend based on search query and user location
+  const loadPOIs = useCallback(async (query: string) => {
+    setIsLoadingPOIs(true)
+    try {
+      const filteredPOIs = await fetchFilteredPOIs({
+        query,
+        userLocation: userLocation || undefined,
+        radius: 10, // 10km radius
+      })
+      setPois(filteredPOIs)
+    } catch (error) {
+      console.error('Error fetching POIs:', error)
+    } finally {
+      setIsLoadingPOIs(false)
+    }
+  }, [userLocation])
 
-    const query = searchQuery.toLowerCase()
-    return pois.filter(
-      (poi) =>
-        poi.name.toLowerCase().includes(query) ||
-        poi.type.toLowerCase().includes(query) ||
-        poi.address?.toLowerCase().includes(query)
-    )
-  }, [pois, searchQuery])
+  // Fetch POIs when search query changes (with debouncing)
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      loadPOIs(searchQuery)
+    }, 500) // 500ms debounce
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, loadPOIs])
 
   // Convert POIs to GeoJSON
   const poisGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
     return {
       type: 'FeatureCollection',
-      features: filteredPOIs.map((poi) => ({
+      features: pois.map((poi) => ({
         type: 'Feature',
         geometry: {
           type: 'Point',
@@ -198,7 +214,7 @@ export default function Map() {
         },
       })),
     }
-  }, [filteredPOIs])
+  }, [pois])
 
   useEffect(() => {
     if (mapRef.current) return
@@ -224,9 +240,10 @@ export default function Map() {
     })
 
     mapRef.current.on('load', () => {
-      setPois(mockPOIs)
+      // Load initial POIs
+      loadPOIs('')
     })
-  }, [setFlyToLocation])
+  }, [setFlyToLocation, loadPOIs])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
@@ -234,7 +251,7 @@ export default function Map() {
     if (!map || !map.isStyleLoaded() || poisGeoJSON.features.length === 0) return
     const source = map.getSource('pois') as GeoJSONSource | undefined
 
-    ensureEmojiImages(map, filteredPOIs)
+    ensureEmojiImages(map, pois)
 
     if (source) {
       source.setData(poisGeoJSON)
@@ -285,7 +302,7 @@ export default function Map() {
       const properties = feature.properties as { id: string }
 
       // Find the full POI object
-      const poi = filteredPOIs.find((p) => p.id === properties.id)
+      const poi = pois.find((p) => p.id === properties.id)
       if (poi) {
         setSelectedPOI(poi)
       }
@@ -309,7 +326,7 @@ export default function Map() {
     map!.on('mouseleave', 'poi-icons', () => {
       map!.getCanvas().style.cursor = ''
     })
-  }, [router, poisGeoJSON, filteredPOIs, setSelectedPOI])
+  }, [router, poisGeoJSON, pois, setSelectedPOI])
 
   return (
     <>
