@@ -11,7 +11,7 @@ interface MapSearchBarProps {
 
 export default function MapSearchBar({ value, onChange, placeholder = 'Search places...' }: MapSearchBarProps) {
   return (
-    <div className="absolute top-4 left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4">
+    <div className="absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full max-w-md px-4">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
