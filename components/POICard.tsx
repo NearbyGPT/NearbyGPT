@@ -1,6 +1,6 @@
 'use client'
 
-import { X, MapPin, Clock, DollarSign } from 'lucide-react'
+import { X, MapPin, Clock } from 'lucide-react'
 
 export interface POI {
   id: string

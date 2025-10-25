@@ -299,7 +299,7 @@ export default function Map() {
       if (!features?.length) return
 
       const feature = features[0]
-      const properties = feature.properties as any
+      const properties = feature.properties as { id: string }
 
       // Find the full POI object
       const poi = filteredPOIs.find((p) => p.id === properties.id)
