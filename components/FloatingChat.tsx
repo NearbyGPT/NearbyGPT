@@ -25,7 +25,7 @@ export default function FloatingChat() {
   const [loading, setLoading] = useState(false)
   const [sessionId, setSessionId] = useState<string | null>(null)
 
-  const flyToLocation = useGeneralStore((s) => s.flyToLocation)
+  const { flyToLocation, setFilteredRestaurants } = useGeneralStore()
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -111,33 +111,68 @@ export default function FloatingChat() {
 
       const res = await fetch(url, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
       })
 
-      if (!res.ok) {
-        throw new Error(`Chat request failed: ${res.status}`)
-      }
+      if (!res.ok) throw new Error(`Chat request failed: ${res.status}`)
 
-      const data = (await res.json()) as {
-        message?: string
-        response?: string
-        session_id?: string
-      }
+      const data = await res.json()
 
       if (data.session_id && !sessionId) setSessionId(data.session_id)
 
+      // Handle assistant's text response
       const assistantText = data.message ?? data.response
       if (assistantText) {
-        const assistantMessage: Message = {
-          id: `assistant-${Date.now()}`,
-          role: 'assistant',
-          text: assistantText,
-        }
-        setMessages((prev) => [...prev, assistantMessage])
+        setMessages((prev) => [...prev, { id: `assistant-${Date.now()}`, role: 'assistant', text: assistantText }])
       }
+
+      // Handle ai_response
+      const aiRes = data.ai_response
+
+      if (!aiRes) {
+        // no AI response → do nothing with the map
+        return
+      }
+
+      if (typeof aiRes === 'string') {
+        // simple message (not a list)
+        setMessages((prev) => [...prev, { id: `assistant-${Date.now()}`, role: 'assistant', text: aiRes }])
+        return
+      }
+
+      if (Array.isArray(aiRes) && aiRes.length > 0) {
+        // valid restaurant list
+        const filteredData: GeoJSON.FeatureCollection<GeoJSON.Point> = {
+          type: 'FeatureCollection',
+          features: aiRes
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .filter((r: any) => r.lng != null && r.lat != null)
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            .map((r: any) => ({
+              type: 'Feature' as const,
+              geometry: {
+                type: 'Point' as const,
+                coordinates: [Number(r.lng), Number(r.lat)] as [number, number],
+              },
+              properties: { name: r.name },
+            })),
+        }
+
+        if (filteredData.features.length === 0) return // still no valid points → skip
+
+        // update map
+        setFilteredRestaurants(filteredData)
+
+        // fly to first restaurant
+        const first = filteredData.features[0]
+        if (first?.geometry?.type === 'Point') {
+          const [lng, lat] = first.geometry.coordinates
+          flyToLocation?.(lng, lat)
+        }
+      }
+
+      // If aiRes is array but empty, do nothing (no filter)
     } catch (err) {
       console.error('Chat error:', err)
     } finally {
@@ -173,7 +208,7 @@ export default function FloatingChat() {
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
                   const { latitude, longitude } = pos.coords
-                  flyToLocation(longitude, latitude) // Map will fly + fetch resturants
+                  flyToLocation(longitude, latitude) // Map will fly + fetch restaurants
                 },
                 (err) => {
                   toast(`${err.message}`)

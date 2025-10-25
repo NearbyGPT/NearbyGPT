@@ -96,7 +96,7 @@
 }
 
 body {
-  background: var(--foreground);
+  background: var(--background);
   color: var(--background);
 }
 
@@ -175,4 +175,17 @@ body {
     transform-origin: 70% 70%;
     display: inline-block;
   }
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+.animate-slideUp {
+  animation: slideUp 0.25s ease-out forwards;
 }
