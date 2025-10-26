@@ -67,6 +67,9 @@ export default function Map() {
   const userLocation = useGeneralStore((s) => s.userLocation)
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
+  const chatMessages = useGeneralStore((s) => s.chatMessages)
+  const addChatMessage = useGeneralStore((s) => s.addChatMessage)
+  const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
 
   const [pois, setPois] = useState<POI[]>([])
   const loadPOIs = useCallback(
@@ -95,9 +98,17 @@ export default function Map() {
 
   const handleSearchSubmit = useCallback(
     (query: string) => {
+      if (activeChatPOI) {
+        addChatMessage({
+          id: `${activeChatPOI.id}-${Date.now()}`,
+          role: 'user',
+          text: query,
+        })
+      }
+
       loadPOIs(query)
     },
-    [loadPOIs]
+    [activeChatPOI, addChatMessage, loadPOIs]
   )
 
   // Convert POIs to GeoJSON
@@ -248,8 +259,13 @@ export default function Map() {
         onChange={setSearchQuery}
         placeholder="Search places, types, or areas..."
         activeChatName={activeChatPOI?.name}
-        onClearChat={() => setActiveChatPOI(null)}
+        onClearChat={() => {
+          setActiveChatPOI(null)
+          clearChatMessages()
+        }}
         onSubmit={handleSearchSubmit}
+        messages={chatMessages}
+        isChatActive={Boolean(activeChatPOI)}
       />
       {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
     </>
