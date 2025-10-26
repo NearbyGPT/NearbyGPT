@@ -58,6 +58,7 @@ export default function Map() {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const latestRequestRef = useRef(0)
+  const userLocationRef = useRef<{ latitude: number; longitude: number } | null>(null)
 
   const selectedPOI = useGeneralStore((s) => s.selectedPOI)
   const setSelectedPOI = useGeneralStore((s) => s.setSelectedPOI)
@@ -130,6 +131,11 @@ export default function Map() {
       })),
     }
   }, [pois])
+
+  // Keep ref in sync with userLocation state
+  useEffect(() => {
+    userLocationRef.current = userLocation
+  }, [userLocation])
 
   // Request user location on component mount
   useEffect(() => {
@@ -215,16 +221,16 @@ export default function Map() {
       // Load initial POIs
       loadPOIs('')
 
-      // Fly to user location if we already have it
-      if (userLocation) {
+      // Fly to user location if we already have it (use ref to avoid closure issues)
+      if (userLocationRef.current) {
         mapRef.current?.flyTo({
-          center: [userLocation.longitude, userLocation.latitude],
+          center: [userLocationRef.current.longitude, userLocationRef.current.latitude],
           zoom: 15,
           duration: 2000,
         })
       }
     })
-  }, [setFlyToLocation, setUserLocation, loadPOIs, userLocation])
+  }, [setFlyToLocation, setUserLocation, loadPOIs])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
