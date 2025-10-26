@@ -156,7 +156,7 @@ export default function FloatingChat() {
   return (
     <div
       id="floating-chat"
-      className="fixed left-1/2 w-full max-w-4xl bg-[color:var(--color-dark)] text-white rounded-t-2xl p-4 pb-8"
+      className="fixed left-1/2 w-full max-w-4xl bg-[var(--color-dark)] text-white rounded-t-2xl p-4 pb-8"
       style={{
         bottom: 0,
         transform: `translate(-50%, ${isExpanded ? '0' : 'calc(100% - 63px)'})`,
@@ -167,7 +167,7 @@ export default function FloatingChat() {
       <div className="relative">
         <button
           type="button"
-          className="absolute -top-18 -right-4 bg-[color:var(--color-surface)] p-3 shadow-md hover:bg-[color:var(--color-background-light)] cursor-pointer"
+          className="absolute -top-18 -right-4 bg-[var(--color-surface)] p-3 shadow-md hover:bg-[var(--color-background-light)] cursor-pointer"
           onClick={(e) => {
             e.stopPropagation()
             if (navigator.geolocation && flyToLocation) {
@@ -187,7 +187,7 @@ export default function FloatingChat() {
             }
           }}
         >
-          <LocateFixed className="text-[color:var(--color-dark)]" />
+          <LocateFixed className="text-[var(--color-dark)]" />
         </button>
       </div>
 
@@ -210,12 +210,12 @@ export default function FloatingChat() {
               <div
                 className={`px-3 py-2 rounded-xl text-sm max-w-[80%] whitespace-pre-wrap ${
                   m.role === 'user'
-                    ? 'bg-[color:var(--color-secondary)] text-white'
-                    : 'bg-[color:var(--color-surface)] text-[color:var(--color-dark)]'
+                    ? 'bg-[var(--color-secondary)] text-white'
+                    : 'bg-[var(--color-surface)] text-[var(--color-dark)]'
                 }`}
               >
                 {m.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none text-[color:var(--color-dark)]">{m.text}</div>
+                  <div className="prose prose-sm max-w-none text-[var(--color-dark)]">{m.text}</div>
                 ) : (
                   <div>{m.text}</div>
                 )}
@@ -244,7 +244,7 @@ export default function FloatingChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask your question"
-          className="w-full pr-16 bg-[color:var(--color-dark)] text-white placeholder-white/70 rounded-full border border-[color:var(--color-gray)]"
+          className="w-full pr-16 bg-[var(--color-dark)] text-white placeholder-white/70 rounded-full border border-[var(--color-gray)]"
         />
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
           <Button
