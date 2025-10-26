@@ -67,8 +67,8 @@ export default function MapSearchBar({
                   className={cn(
                     'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm',
                     message.role === 'user'
-                      ? 'bg-[#0066CC] text-white'
-                      : 'bg-gray-100 text-gray-800'
+                      ? 'bg-[color:var(--color-primary)] text-white'
+                      : 'bg-[color:var(--color-background-light)] text-[color:var(--color-dark)]'
                   )}
                 >
                   {message.text}
@@ -82,17 +82,17 @@ export default function MapSearchBar({
           onSubmit={handleSubmit}
           className={cn('flex items-center gap-3', hasMessages && 'mt-4')}
         >
-          <Search className="h-5 w-5 flex-shrink-0 text-[#0066CC]" />
+          <Search className="h-5 w-5 flex-shrink-0 text-[color:var(--color-primary)]" />
           <input
             type="text"
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={chatLabel ? 'Ask this business anything…' : placeholder}
-            className="flex-1 min-w-0 bg-transparent text-base text-gray-700 placeholder:text-gray-400 focus:outline-none"
+            className="flex-1 min-w-0 bg-transparent text-base text-[color:var(--color-dark)] placeholder:text-[color:var(--color-gray)] placeholder:opacity-70 focus:outline-none"
           />
           <button
             type="submit"
-            className="flex items-center gap-2 rounded-full bg-[#0066CC] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#0052A3] focus:outline-none focus:ring-2 focus:ring-[#99C2FF] focus:ring-offset-2 focus:ring-offset-white"
+            className="flex items-center gap-2 rounded-full bg-[color:var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[color:var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[color:var(--color-primary-ring)] focus:ring-offset-2 focus:ring-offset-white"
             aria-label="Send search"
           >
             <Send className="h-4 w-4" />
@@ -102,18 +102,18 @@ export default function MapSearchBar({
         {chatLabel && (
           <div
             className={cn(
-              'mt-3 flex items-center gap-2 rounded-lg bg-[#E6F0FF] px-3 py-2',
+              'mt-3 flex items-center gap-2 rounded-lg bg-[color:var(--color-primary-soft)] px-3 py-2',
               hasMessages && 'mt-4'
             )}
           >
-            <span className="flex-1 text-sm font-medium leading-snug text-[#0052A3] break-words">
+            <span className="flex-1 text-sm font-medium leading-snug text-[color:var(--color-primary-dark)] break-words">
               {chatLabel}
             </span>
             {onClearChat && (
               <button
                 type="button"
                 onClick={onClearChat}
-                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[#0052A3]/70 transition-colors hover:bg-[#0052A3]/10 hover:text-[#0052A3]"
+                className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-[color:var(--color-primary-dark)] opacity-70 transition-colors hover:bg-[color:var(--color-primary-soft)] hover:text-[color:var(--color-primary-dark)] hover:opacity-100"
                 aria-label="Stop chatting with this business"
               >
                 <X className="h-3.5 w-3.5" />

@@ -13,6 +13,10 @@
   --color-surface: #ffffff; /* Surface White */
   --color-dark: #2c3e50; /* Dark Text */
   --color-gray: #6c757d; /* Gray Text */
+  --color-primary-dark: #0052a3; /* Primary Dark */
+  --color-primary-darker: #004482; /* Primary Darker */
+  --color-primary-soft: #e6f0ff; /* Primary Soft */
+  --color-primary-ring: #99c2ff; /* Primary Ring */
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
@@ -59,6 +63,10 @@
   --color-surface: var(--color-surface);
   --color-dark: var(--color-dark);
   --color-gray: var(--color-gray);
+  --color-primary-dark: var(--color-primary-dark);
+  --color-primary-darker: var(--color-primary-darker);
+  --color-primary-soft: var(--color-primary-soft);
+  --color-primary-ring: var(--color-primary-ring);
 
   /* Fonts */
   --font-sans: var(--font-geist-sans);
