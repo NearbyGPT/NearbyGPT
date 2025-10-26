@@ -58,6 +58,7 @@ export default function Map() {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const latestRequestRef = useRef(0)
+  const userLocationRef = useRef<{ latitude: number; longitude: number } | null>(null)
 
   const selectedPOI = useGeneralStore((s) => s.selectedPOI)
   const setSelectedPOI = useGeneralStore((s) => s.setSelectedPOI)
@@ -131,6 +132,40 @@ export default function Map() {
     }
   }, [pois])
 
+  // Keep ref in sync with userLocation state
+  useEffect(() => {
+    userLocationRef.current = userLocation
+  }, [userLocation])
+
+  // Request user location on component mount
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setUserLocation({ latitude, longitude })
+
+          // Fly to user's location if map is already loaded
+          if (mapRef.current?.isStyleLoaded()) {
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 15,
+              duration: 2000,
+            })
+          }
+        },
+        (error) => {
+          console.warn('Error getting user location:', error.message)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      )
+    }
+  }, [setUserLocation])
+
   // Fetch POIs when search query changes (with debouncing)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -185,6 +220,15 @@ export default function Map() {
     mapRef.current.on('load', () => {
       // Load initial POIs
       loadPOIs('')
+
+      // Fly to user location if we already have it (use ref to avoid closure issues)
+      if (userLocationRef.current) {
+        mapRef.current?.flyTo({
+          center: [userLocationRef.current.longitude, userLocationRef.current.latitude],
+          zoom: 15,
+          duration: 2000,
+        })
+      }
     })
   }, [setFlyToLocation, setUserLocation, loadPOIs])
 
