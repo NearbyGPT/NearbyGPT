@@ -26,6 +26,7 @@ export default function FloatingChat() {
   const [sessionId, setSessionId] = useState<string | null>(null)
 
   const flyToLocation = useGeneralStore((s) => s.flyToLocation)
+  const setUserLocation = useGeneralStore((s) => s.setUserLocation)
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -173,7 +174,10 @@ export default function FloatingChat() {
               navigator.geolocation.getCurrentPosition(
                 (pos) => {
                   const { latitude, longitude } = pos.coords
-                  flyToLocation(longitude, latitude) // Map will fly + fetch resturants
+                  // Store user location in state
+                  setUserLocation({ latitude, longitude })
+                  // Fly to location on map
+                  flyToLocation(longitude, latitude)
                 },
                 (err) => {
                   toast(`${err.message}`)

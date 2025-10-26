@@ -1,11 +1,11 @@
 'use client'
 
-import { useEffect, useRef, useState, useMemo } from 'react'
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import { loadPOIs } from '@/lib/pois'
+import { fetchFilteredPOIs } from '@/lib/poiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -57,41 +57,61 @@ const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
 export default function Map() {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
+  const latestRequestRef = useRef(0)
 
   const selectedPOI = useGeneralStore((s) => s.selectedPOI)
   const setSelectedPOI = useGeneralStore((s) => s.setSelectedPOI)
   const searchQuery = useGeneralStore((s) => s.searchQuery)
   const setSearchQuery = useGeneralStore((s) => s.setSearchQuery)
   const setFlyToLocation = useGeneralStore((s) => s.setFlyToLocation)
+  const userLocation = useGeneralStore((s) => s.userLocation)
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
 
   const [pois, setPois] = useState<POI[]>([])
-  const latestRequestRef = useRef(0)
+  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
 
-  const handleSearchSubmit = (query: string) => {
-    // Mock sending the search query to the backend for now
-    console.log('Mock search submission:', query)
-  }
+  const loadPOIs = useCallback(
+    async (query: string) => {
+      const requestId = latestRequestRef.current + 1
+      latestRequestRef.current = requestId
 
-  // Filter POIs based on search query
-  const filteredPOIs = useMemo(() => {
-    if (!searchQuery.trim()) return pois
+      setIsLoadingPOIs(true)
+      try {
+        const filteredPOIs = await fetchFilteredPOIs({
+          query,
+          userLocation: userLocation || undefined,
+          radius: 10, // 10km radius
+        })
 
-    const query = searchQuery.toLowerCase()
-    return pois.filter(
-      (poi) =>
-        poi.name.toLowerCase().includes(query) ||
-        poi.type.toLowerCase().includes(query) ||
-        poi.address?.toLowerCase().includes(query)
-    )
-  }, [pois, searchQuery])
+        if (latestRequestRef.current === requestId) {
+          setPois(filteredPOIs)
+        }
+      } catch (error) {
+        if (latestRequestRef.current === requestId) {
+          console.error('Error fetching POIs:', error)
+        }
+      } finally {
+        if (latestRequestRef.current === requestId) {
+          setIsLoadingPOIs(false)
+        }
+      }
+    },
+    [userLocation]
+  )
+
+  const handleSearchSubmit = useCallback(
+    (query: string) => {
+      loadPOIs(query)
+    },
+    [loadPOIs]
+  )
 
   // Convert POIs to GeoJSON
   const poisGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
     return {
       type: 'FeatureCollection',
-      features: filteredPOIs.map((poi) => ({
+      features: pois.map((poi) => ({
         type: 'Feature',
         geometry: {
           type: 'Point',
@@ -103,35 +123,16 @@ export default function Map() {
         },
       })),
     }
-  }, [filteredPOIs])
+  }, [pois])
 
+  // Fetch POIs when search query changes (with debouncing)
   useEffect(() => {
-    const controller = new AbortController()
-    const requestId = latestRequestRef.current + 1
-    latestRequestRef.current = requestId
+    const timeoutId = setTimeout(() => {
+      loadPOIs(searchQuery)
+    }, 500) // 500ms debounce
 
-    loadPOIs(searchQuery, controller.signal)
-      .then((results) => {
-        if (latestRequestRef.current === requestId && !controller.signal.aborted) {
-          setPois(results)
-        }
-      })
-      .catch((error: unknown) => {
-        const isAbortError =
-          (typeof DOMException !== 'undefined' && error instanceof DOMException && error.name === 'AbortError') ||
-          (typeof error === 'object' && error !== null && 'name' in error && (error as { name?: string }).name === 'AbortError')
-
-        if (isAbortError) {
-          return
-        }
-
-        console.error('Failed to load POIs', error)
-      })
-
-    return () => {
-      controller.abort()
-    }
-  }, [searchQuery])
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, loadPOIs])
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return
@@ -154,7 +155,11 @@ export default function Map() {
       })
     })
 
-  }, [setFlyToLocation])
+    mapRef.current.on('load', () => {
+      // Load initial POIs
+      loadPOIs('')
+    })
+  }, [setFlyToLocation, loadPOIs])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
@@ -162,7 +167,7 @@ export default function Map() {
     if (!map || !map.isStyleLoaded() || poisGeoJSON.features.length === 0) return
     const source = map.getSource('pois') as GeoJSONSource | undefined
 
-    ensureEmojiImages(map, filteredPOIs)
+    ensureEmojiImages(map, pois)
 
     if (source) {
       source.setData(poisGeoJSON)
@@ -213,7 +218,7 @@ export default function Map() {
       const properties = feature.properties as { id: string }
 
       // Find the full POI object
-      const poi = filteredPOIs.find((p) => p.id === properties.id)
+      const poi = pois.find((p) => p.id === properties.id)
       if (poi) {
         setSelectedPOI(poi)
       }
@@ -237,7 +242,7 @@ export default function Map() {
     map!.on('mouseleave', 'poi-icons', () => {
       map!.getCanvas().style.cursor = ''
     })
-  }, [poisGeoJSON, filteredPOIs, setSelectedPOI])
+  }, [poisGeoJSON, pois, setSelectedPOI])
 
   return (
     <>
