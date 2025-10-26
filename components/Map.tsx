@@ -135,9 +135,12 @@ export default function Map() {
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [31.2001, 29.9187],
       zoom: 15,
+      attributionControl: false,
+      logoPosition: 'top-left',
     })
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'bottom-right')
+    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
+    mapRef.current.addControl(new mapboxgl.AttributionControl({ compact: true }), 'top-left')
 
     // Set flyToLocation function
     setFlyToLocation((lng: number, lat: number) => {

@@ -34,6 +34,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
     }
 
     setActiveChatPOI(poi)
+    onClose()
   }
 
   return (
