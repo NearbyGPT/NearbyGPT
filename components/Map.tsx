@@ -65,6 +65,7 @@ export default function Map() {
   const setSearchQuery = useGeneralStore((s) => s.setSearchQuery)
   const setFlyToLocation = useGeneralStore((s) => s.setFlyToLocation)
   const userLocation = useGeneralStore((s) => s.userLocation)
+  const setUserLocation = useGeneralStore((s) => s.setUserLocation)
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
   const chatMessages = useGeneralStore((s) => s.chatMessages)
@@ -153,6 +154,24 @@ export default function Map() {
     mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
     mapRef.current.addControl(new mapboxgl.AttributionControl({ compact: true }), 'top-left')
 
+    // Add geolocation control
+    const geolocateControl = new mapboxgl.GeolocateControl({
+      positionOptions: {
+        enableHighAccuracy: true,
+      },
+      trackUserLocation: true,
+      showUserHeading: true,
+    })
+    mapRef.current.addControl(geolocateControl, 'top-right')
+
+    // Update user location in store when geolocate triggers
+    geolocateControl.on('geolocate', (e: GeolocationPosition) => {
+      setUserLocation({
+        latitude: e.coords.latitude,
+        longitude: e.coords.longitude,
+      })
+    })
+
     // Set flyToLocation function
     setFlyToLocation((lng: number, lat: number) => {
       mapRef.current?.flyTo({
@@ -166,7 +185,7 @@ export default function Map() {
       // Load initial POIs
       loadPOIs('')
     })
-  }, [setFlyToLocation, loadPOIs])
+  }, [setFlyToLocation, setUserLocation, loadPOIs])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
