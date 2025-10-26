@@ -52,7 +52,7 @@ export default function MapSearchBar({
     >
       <div
         className={cn(
-          'rounded-2xl bg-white shadow-xl border border-transparent px-4 py-4 sm:px-5',
+          'rounded-2xl border border-[var(--color-border)] bg-[var(--color-surface)] px-4 py-4 shadow-xl sm:px-5',
           hasMessages && 'flex h-[50vh] flex-col'
         )}
       >

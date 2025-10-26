@@ -156,7 +156,7 @@ export default function FloatingChat() {
   return (
     <div
       id="floating-chat"
-      className="fixed left-1/2 w-full max-w-4xl bg-[var(--color-dark)] text-white rounded-t-2xl p-4 pb-8"
+      className="fixed left-1/2 w-full max-w-4xl rounded-t-3xl border border-[var(--color-border)] bg-[var(--color-surface)] p-4 pb-8 text-[var(--color-dark)] shadow-[0_-20px_60px_rgba(44,62,80,0.16)]"
       style={{
         bottom: 0,
         transform: `translate(-50%, ${isExpanded ? '0' : 'calc(100% - 63px)'})`,
@@ -167,7 +167,7 @@ export default function FloatingChat() {
       <div className="relative">
         <button
           type="button"
-          className="absolute -top-18 -right-4 bg-[var(--color-surface)] p-3 shadow-md hover:bg-[var(--color-background-light)] cursor-pointer"
+          className="absolute -top-18 -right-4 flex h-12 w-12 items-center justify-center rounded-full border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-primary)] shadow-lg transition-colors hover:bg-[var(--color-primary-soft)] hover:text-[var(--color-primary-dark)]"
           onClick={(e) => {
             e.stopPropagation()
             if (navigator.geolocation && flyToLocation) {
@@ -187,19 +187,24 @@ export default function FloatingChat() {
             }
           }}
         >
-          <LocateFixed className="text-[var(--color-dark)]" />
+          <LocateFixed className="h-5 w-5" />
         </button>
       </div>
 
       {/* Handle */}
-      <div className="w-12 h-2 bg-white/40 rounded-full mx-auto mb-4 cursor-pointer" onClick={toggleSheet}></div>
+      <button
+        type="button"
+        className="mx-auto mb-4 block h-2 w-12 cursor-pointer rounded-full bg-[var(--color-gray)]/30"
+        onClick={toggleSheet}
+        aria-label={isExpanded ? 'Collapse chat' : 'Expand chat'}
+      ></button>
 
       <div className="flex items-center gap-x-2 mb-3">
         <span role="img" aria-label="waving hand" className="text-[20px] animate-wave">
           👋
         </span>
 
-        <h3 className="text-white text-lg font-medium">What&apos;s on your mind?</h3>
+        <h3 className="text-lg font-medium text-[var(--color-dark)]">What&apos;s on your mind?</h3>
       </div>
 
       {/* Messages container */}
@@ -225,10 +230,16 @@ export default function FloatingChat() {
 
           {loading && (
             <div className="flex justify-start">
-              <div className="flex items-center gap-1 bg-white/10 rounded-full px-3 py-2">
-                <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }} />
-                <span className="w-2 h-2 bg-white rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }} />
-                <span className="w-2 h-2 bg-white rounded-full animate-bounce" />
+              <div className="flex items-center gap-1 rounded-full bg-[var(--color-primary-soft)] px-3 py-2">
+                <span
+                  className="h-2 w-2 animate-bounce rounded-full bg-[var(--color-primary)]"
+                  style={{ animationDelay: '-0.3s' }}
+                />
+                <span
+                  className="h-2 w-2 animate-bounce rounded-full bg-[var(--color-primary)]"
+                  style={{ animationDelay: '-0.15s' }}
+                />
+                <span className="h-2 w-2 animate-bounce rounded-full bg-[var(--color-primary)]" />
               </div>
             </div>
           )}
@@ -244,15 +255,16 @@ export default function FloatingChat() {
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={handleKeyDown}
           placeholder="Ask your question"
-          className="w-full pr-16 bg-[var(--color-dark)] text-white placeholder-white/70 rounded-full border border-[var(--color-gray)]"
+          className="w-full rounded-full border border-[var(--color-border)] bg-[var(--color-background-light)] pr-16 text-[var(--color-dark)] placeholder:text-[var(--color-gray)]"
         />
-        <div className="absolute right-2 top-1/2 transform -translate-y-1/2 flex gap-1">
+        <div className="absolute right-2 top-1/2 flex -translate-y-1/2 gap-1">
           <Button
-            className="!p-1.5 bg-transparent hover:!bg-transparent cursor-pointer"
+            size="icon"
+            className="h-10 w-10 rounded-full bg-[var(--color-primary)] text-white shadow-md transition-colors hover:bg-[var(--color-primary-dark)]"
             onClick={handleSend}
             disabled={loading}
           >
-            <Send className="w-5 h-5" />
+            <Send className="h-5 w-5" />
           </Button>
         </div>
       </div>
