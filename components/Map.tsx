@@ -69,14 +69,11 @@ export default function Map() {
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
 
   const [pois, setPois] = useState<POI[]>([])
-  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
-
   const loadPOIs = useCallback(
     async (query: string) => {
       const requestId = latestRequestRef.current + 1
       latestRequestRef.current = requestId
 
-      setIsLoadingPOIs(true)
       try {
         const filteredPOIs = await fetchFilteredPOIs({
           query,
@@ -90,10 +87,6 @@ export default function Map() {
       } catch (error) {
         if (latestRequestRef.current === requestId) {
           console.error('Error fetching POIs:', error)
-        }
-      } finally {
-        if (latestRequestRef.current === requestId) {
-          setIsLoadingPOIs(false)
         }
       }
     },
