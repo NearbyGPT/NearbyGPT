@@ -25,14 +25,17 @@ interface POICardProps {
 export default function POICard({ poi, onClose }: POICardProps) {
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
+  const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
   const isChattingWithPOI = activeChatPOI?.id === poi.id
 
   const handleChatClick = () => {
     if (isChattingWithPOI) {
       setActiveChatPOI(null)
+      clearChatMessages()
       return
     }
 
+    clearChatMessages()
     setActiveChatPOI(poi)
     onClose()
   }

@@ -1,8 +1,9 @@
 'use client'
 
-import { FormEvent } from 'react'
+import { FormEvent, useEffect, useRef } from 'react'
 import { Search, Send, X } from 'lucide-react'
 import { cn } from '@/lib/utils'
+import type { ChatMessage } from '@/store/generalStore'
 
 interface MapSearchBarProps {
   value: string
@@ -11,6 +12,8 @@ interface MapSearchBarProps {
   activeChatName?: string
   onClearChat?: () => void
   onSubmit?: (value: string) => void
+  messages?: ChatMessage[]
+  isChatActive?: boolean
 }
 
 export default function MapSearchBar({
@@ -20,8 +23,17 @@ export default function MapSearchBar({
   activeChatName,
   onClearChat,
   onSubmit,
+  messages = [],
+  isChatActive = false,
 }: MapSearchBarProps) {
   const chatLabel = activeChatName ? `Chatting with ${activeChatName}` : null
+  const hasMessages = isChatActive && messages.length > 0
+  const messagesEndRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (!hasMessages) return
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
+  }, [hasMessages, messages.length])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -35,11 +47,41 @@ export default function MapSearchBar({
     <div
       className={cn(
         'absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full px-4 transition-all',
-        activeChatName ? 'max-w-2xl' : 'max-w-md'
+        chatLabel || hasMessages ? 'max-w-2xl' : 'max-w-md'
       )}
     >
-      <div className="rounded-2xl bg-white shadow-xl border border-transparent px-4 py-4 sm:px-5">
-        <form onSubmit={handleSubmit} className="flex items-center gap-3">
+      <div
+        className={cn(
+          'rounded-2xl bg-white shadow-xl border border-transparent px-4 py-4 sm:px-5',
+          hasMessages && 'flex h-[50vh] flex-col'
+        )}
+      >
+        {hasMessages && (
+          <div className="flex-1 overflow-y-auto space-y-3 pr-1">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}
+              >
+                <div
+                  className={cn(
+                    'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm',
+                    message.role === 'user'
+                      ? 'bg-[#0066CC] text-white'
+                      : 'bg-gray-100 text-gray-800'
+                  )}
+                >
+                  {message.text}
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+        <form
+          onSubmit={handleSubmit}
+          className={cn('flex items-center gap-3', hasMessages && 'mt-4')}
+        >
           <Search className="h-5 w-5 flex-shrink-0 text-[#0066CC]" />
           <input
             type="text"
@@ -58,7 +100,12 @@ export default function MapSearchBar({
           </button>
         </form>
         {chatLabel && (
-          <div className="mt-3 flex items-center gap-2 rounded-lg bg-[#E6F0FF] px-3 py-2">
+          <div
+            className={cn(
+              'mt-3 flex items-center gap-2 rounded-lg bg-[#E6F0FF] px-3 py-2',
+              hasMessages && 'mt-4'
+            )}
+          >
             <span className="flex-1 text-sm font-medium leading-snug text-[#0052A3] break-words">
               {chatLabel}
             </span>
