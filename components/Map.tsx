@@ -2,113 +2,12 @@
 
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
-import { useRouter } from 'next/navigation'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
 import { fetchFilteredPOIs } from '@/lib/poiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
-
-// ---- Mock POI data with icons ----
-const mockPOIs: POI[] = [
-  {
-    id: '1',
-    name: 'Koshary El Tahrir',
-    type: 'Egyptian Restaurant',
-    icon: '🍲',
-    coordinates: [31.2001, 29.9187],
-    address: 'Tahrir Square, Cairo',
-    rating: 4.5,
-    priceLevel: '$',
-    hours: 'Open until 11 PM',
-    description: 'Traditional Egyptian koshary and local dishes',
-  },
-  {
-    id: '2',
-    name: 'Zooba',
-    type: 'Modern Egyptian',
-    icon: '🥙',
-    coordinates: [31.22, 29.95],
-    address: 'Zamalek, Cairo',
-    rating: 4.7,
-    priceLevel: '$$',
-    hours: 'Open until 12 AM',
-    description: 'Contemporary take on traditional Egyptian street food',
-  },
-  {
-    id: '3',
-    name: 'Abou Shakra',
-    type: 'Grill Restaurant',
-    icon: '🥩',
-    coordinates: [31.21, 29.93],
-    address: 'Garden City, Cairo',
-    rating: 4.3,
-    priceLevel: '$$',
-    hours: 'Open until 1 AM',
-    description: 'Famous for grilled meats and kebabs',
-  },
-  {
-    id: '4',
-    name: 'Felfela',
-    type: 'Traditional Egyptian',
-    icon: '🍛',
-    coordinates: [31.23, 29.94],
-    address: 'Downtown Cairo',
-    rating: 4.4,
-    priceLevel: '$',
-    hours: 'Open until 10 PM',
-    description: 'Authentic Egyptian cuisine in a traditional setting',
-  },
-  {
-    id: '5',
-    name: 'Cairo Kitchen',
-    type: 'Cafe',
-    icon: '☕',
-    coordinates: [31.225, 29.955],
-    address: 'Zamalek, Cairo',
-    rating: 4.6,
-    priceLevel: '$$',
-    hours: 'Open until 11 PM',
-    description: 'Cozy cafe with Egyptian and international dishes',
-  },
-  {
-    id: '6',
-    name: 'The Tap West',
-    type: 'Bar & Grill',
-    icon: '🍺',
-    coordinates: [31.208, 29.928],
-    address: 'Maadi, Cairo',
-    rating: 4.5,
-    priceLevel: '$$$',
-    hours: 'Open until 2 AM',
-    description: 'Sports bar with great food and drinks',
-  },
-  {
-    id: '7',
-    name: 'Kazoku',
-    type: 'Japanese Restaurant',
-    icon: '🍱',
-    coordinates: [31.215, 29.935],
-    address: 'Heliopolis, Cairo',
-    rating: 4.8,
-    priceLevel: '$$$',
-    hours: 'Open until 11:30 PM',
-    description: 'Authentic Japanese sushi and ramen',
-  },
-  {
-    id: '8',
-    name: 'Lucille\'s',
-    type: 'American Burger',
-    icon: '🍔',
-    coordinates: [31.205, 29.945],
-    address: 'Mohandiseen, Cairo',
-    rating: 4.6,
-    priceLevel: '$$',
-    hours: 'Open until 12 AM',
-    description: 'Gourmet burgers and American comfort food',
-  },
-]
 
 const getEmojiImageId = (emoji: string) =>
   `emoji-${
@@ -156,9 +55,9 @@ const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
 }
 
 export default function Map() {
-  const router = useRouter()
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
+  const latestRequestRef = useRef(0)
 
   const selectedPOI = useGeneralStore((s) => s.selectedPOI)
   const setSelectedPOI = useGeneralStore((s) => s.setSelectedPOI)
@@ -170,33 +69,36 @@ export default function Map() {
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
 
   const [pois, setPois] = useState<POI[]>([])
-  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
+  const loadPOIs = useCallback(
+    async (query: string) => {
+      const requestId = latestRequestRef.current + 1
+      latestRequestRef.current = requestId
 
-  // Fetch POIs from backend based on search query and user location
-  const loadPOIs = useCallback(async (query: string) => {
-    setIsLoadingPOIs(true)
-    try {
-      const filteredPOIs = await fetchFilteredPOIs({
-        query,
-        userLocation: userLocation || undefined,
-        radius: 10, // 10km radius
-      })
-      setPois(filteredPOIs)
-    } catch (error) {
-      console.error('Error fetching POIs:', error)
-    } finally {
-      setIsLoadingPOIs(false)
-    }
-  }, [userLocation])
+      try {
+        const filteredPOIs = await fetchFilteredPOIs({
+          query,
+          userLocation: userLocation || undefined,
+          radius: 10, // 10km radius
+        })
 
-  // Fetch POIs when search query changes (with debouncing)
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      loadPOIs(searchQuery)
-    }, 500) // 500ms debounce
+        if (latestRequestRef.current === requestId) {
+          setPois(filteredPOIs)
+        }
+      } catch (error) {
+        if (latestRequestRef.current === requestId) {
+          console.error('Error fetching POIs:', error)
+        }
+      }
+    },
+    [userLocation]
+  )
 
-    return () => clearTimeout(timeoutId)
-  }, [searchQuery, loadPOIs])
+  const handleSearchSubmit = useCallback(
+    (query: string) => {
+      loadPOIs(query)
+    },
+    [loadPOIs]
+  )
 
   // Convert POIs to GeoJSON
   const poisGeoJSON = useMemo<GeoJSON.FeatureCollection>(() => {
@@ -216,10 +118,17 @@ export default function Map() {
     }
   }, [pois])
 
+  // Fetch POIs when search query changes (with debouncing)
   useEffect(() => {
-    if (mapRef.current) return
+    const timeoutId = setTimeout(() => {
+      loadPOIs(searchQuery)
+    }, 500) // 500ms debounce
 
-    if (!mapContainer.current) return
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, loadPOIs])
+
+  useEffect(() => {
+    if (mapRef.current || !mapContainer.current) return
 
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
@@ -326,7 +235,7 @@ export default function Map() {
     map!.on('mouseleave', 'poi-icons', () => {
       map!.getCanvas().style.cursor = ''
     })
-  }, [router, poisGeoJSON, pois, setSelectedPOI])
+  }, [poisGeoJSON, pois, setSelectedPOI])
 
   return (
     <>
@@ -337,6 +246,7 @@ export default function Map() {
         placeholder="Search places, types, or areas..."
         activeChatName={activeChatPOI?.name}
         onClearChat={() => setActiveChatPOI(null)}
+        onSubmit={handleSearchSubmit}
       />
       {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
     </>
