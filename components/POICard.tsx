@@ -42,28 +42,28 @@ export default function POICard({ poi, onClose }: POICardProps) {
 
   return (
     <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-4">
-      <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
+      <div className="bg-[color:var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden">
         <div className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-[#20B2AA] flex items-center justify-center text-2xl">
+              <div className="w-12 h-12 rounded-full bg-[color:var(--color-accent)] flex items-center justify-center text-2xl">
                 {poi.icon}
               </div>
               <div>
                 <h3 className="font-semibold text-lg">{poi.name}</h3>
-                <p className="text-sm text-gray-500">{poi.type}</p>
+                <p className="text-sm text-[color:var(--color-gray)]">{poi.type}</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-full transition-colors"
+              className="p-1 hover:bg-[color:var(--color-background-light)] rounded-full transition-colors"
             >
-              <X className="h-5 w-5 text-gray-400" />
+              <X className="h-5 w-5 text-[color:var(--color-gray)] opacity-70" />
             </button>
           </div>
 
           {poi.address && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <div className="flex items-center gap-2 text-sm text-[color:var(--color-gray)] mb-2">
               <MapPin className="h-4 w-4" />
               <span>{poi.address}</span>
             </div>
@@ -74,22 +74,22 @@ export default function POICard({ poi, onClose }: POICardProps) {
               <span className="text-sm font-medium">⭐ {poi.rating}</span>
               {poi.priceLevel && (
                 <>
-                  <span className="text-gray-300">•</span>
-                  <span className="text-sm text-gray-600">{poi.priceLevel}</span>
+                  <span className="text-[color:var(--color-gray)] opacity-50">•</span>
+                  <span className="text-sm text-[color:var(--color-gray)]">{poi.priceLevel}</span>
                 </>
               )}
             </div>
           )}
 
           {poi.hours && (
-            <div className="flex items-center gap-2 text-sm text-gray-600 mb-2">
+            <div className="flex items-center gap-2 text-sm text-[color:var(--color-gray)] mb-2">
               <Clock className="h-4 w-4" />
               <span>{poi.hours}</span>
             </div>
           )}
 
           {poi.description && (
-            <p className="text-sm text-gray-600 mt-3 pt-3 border-t">{poi.description}</p>
+            <p className="text-sm text-[color:var(--color-gray)] mt-3 pt-3 border-t">{poi.description}</p>
           )}
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
@@ -99,8 +99,8 @@ export default function POICard({ poi, onClose }: POICardProps) {
               className={cn(
                 'flex w-full items-center justify-center gap-2 rounded-full border px-4 py-3 font-medium transition-colors',
                 isChattingWithPOI
-                  ? 'border-[#0052A3] bg-[#0052A3] text-white hover:bg-[#004482]'
-                  : 'border-[#0066CC] text-[#0066CC] hover:bg-[#E6F0FF]'
+                  ? 'border-[color:var(--color-primary-dark)] bg-[color:var(--color-primary-dark)] text-white hover:bg-[color:var(--color-primary-darker)]'
+                  : 'border-[color:var(--color-primary)] text-[color:var(--color-primary)] hover:bg-[color:var(--color-primary-soft)]'
               )}
             >
               <MessageCircle className="h-5 w-5" />
@@ -108,7 +108,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
             </button>
             <button
               type="button"
-              className="w-full rounded-full bg-[#0066CC] py-3 font-medium text-white transition-colors hover:bg-[#0052A3]"
+              className="w-full rounded-full bg-[color:var(--color-primary)] py-3 font-medium text-white transition-colors hover:bg-[color:var(--color-primary-dark)]"
             >
               Get Directions
             </button>
