@@ -131,6 +131,35 @@ export default function Map() {
     }
   }, [pois])
 
+  // Request user location on component mount
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setUserLocation({ latitude, longitude })
+
+          // Fly to user's location if map is already loaded
+          if (mapRef.current?.isStyleLoaded()) {
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 15,
+              duration: 2000,
+            })
+          }
+        },
+        (error) => {
+          console.warn('Error getting user location:', error.message)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      )
+    }
+  }, [setUserLocation])
+
   // Fetch POIs when search query changes (with debouncing)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
@@ -185,8 +214,17 @@ export default function Map() {
     mapRef.current.on('load', () => {
       // Load initial POIs
       loadPOIs('')
+
+      // Fly to user location if we already have it
+      if (userLocation) {
+        mapRef.current?.flyTo({
+          center: [userLocation.longitude, userLocation.latitude],
+          zoom: 15,
+          duration: 2000,
+        })
+      }
     })
-  }, [setFlyToLocation, setUserLocation, loadPOIs])
+  }, [setFlyToLocation, setUserLocation, loadPOIs, userLocation])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
