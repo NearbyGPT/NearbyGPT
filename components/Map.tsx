@@ -105,11 +105,12 @@ export default function Map() {
           role: 'user',
           text: query,
         })
+        setSearchQuery('') // Clear input after sending message in chat mode
       }
 
       loadPOIs(query)
     },
-    [activeChatPOI, addChatMessage, loadPOIs]
+    [activeChatPOI, addChatMessage, loadPOIs, setSearchQuery]
   )
 
   // Convert POIs to GeoJSON
