@@ -200,7 +200,7 @@ export default function Map() {
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [31.2001, 29.9187],
+      center: [29.9187, 31.2001],
       zoom: 15,
       attributionControl: false,
       logoPosition: 'top-left',

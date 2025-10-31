@@ -42,7 +42,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
 
   return (
     <div className="absolute bottom-24 left-1/2 -translate-x-1/2 z-10 w-full max-w-sm px-4">
-      <div className="bg-[var(--color-surface)] rounded-2xl shadow-2xl overflow-hidden">
+      <div className="bg-[var(--color-surface)] text-[var(--color-dark)] rounded-2xl shadow-2xl overflow-hidden">
         <div className="p-4">
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
@@ -50,7 +50,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
                 {poi.icon}
               </div>
               <div>
-                <h3 className="font-semibold text-lg">{poi.name}</h3>
+                <h3 className="font-semibold text-lg text-[var(--color-dark)]">{poi.name}</h3>
                 <p className="text-sm text-[var(--color-gray)]">{poi.type}</p>
               </div>
             </div>
