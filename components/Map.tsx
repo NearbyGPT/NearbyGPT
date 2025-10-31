@@ -200,7 +200,7 @@ export default function Map() {
     mapRef.current = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
-      center: [29.9187, 31.2001],
+      center: [31.2001, 29.9187],
       zoom: 15,
       attributionControl: false,
       logoPosition: 'top-left',
@@ -251,107 +251,155 @@ export default function Map() {
   // ---- Render POIs + layers ----
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded() || poisGeoJSON.features.length === 0) return
-    const source = map.getSource('pois') as GeoJSONSource | undefined
+    if (!map || poisGeoJSON.features.length === 0) return
 
-    ensureEmojiImages(map, pois)
+    const cleanupFns: Array<() => void> = []
 
-    if (source) {
-      source.setData(poisGeoJSON)
-      map.triggerRepaint()
-    } else {
-      map.addSource('pois', {
-        type: 'geojson',
-        generateId: true,
-        data: poisGeoJSON,
-      })
+    const applyPoisToMap = () => {
+      let source = map.getSource('pois') as GeoJSONSource | undefined
 
-      // ---- POI circles with icons ----
-      map.addLayer({
-        id: 'poi-circles',
-        type: 'circle',
-        source: 'pois',
-        paint: {
-          'circle-color': '#20B2AA',
-          'circle-radius': 20,
-          'circle-stroke-color': '#ffffff',
-          'circle-stroke-width': 3,
-        },
-      })
+      ensureEmojiImages(map, pois)
 
-      // ---- POI emoji icons ----
-      map.addLayer({
-        id: 'poi-icons',
-        type: 'symbol',
-        source: 'pois',
-        layout: {
-          'icon-image': ['get', 'iconImageId'],
-          'icon-size': 0.6,
-          'icon-anchor': 'center',
-          'icon-allow-overlap': true,
-        },
-      })
-    }
+      if (!source) {
+        map.addSource('pois', {
+          type: 'geojson',
+          generateId: true,
+          data: poisGeoJSON,
+        })
 
-    // ---- POI click handler ----
-    const poiClickHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
-      const features = mapRef.current?.queryRenderedFeatures(e.point, {
-        layers: ['poi-circles', 'poi-icons'],
-      }) as mapboxgl.GeoJSONFeature[]
+        map.addLayer({
+          id: 'poi-circles',
+          type: 'circle',
+          source: 'pois',
+          paint: {
+            'circle-color': '#20B2AA',
+            'circle-radius': 20,
+            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 3,
+          },
+        })
 
-      if (!features?.length) return
+        map.addLayer({
+          id: 'poi-icons',
+          type: 'symbol',
+          source: 'pois',
+          layout: {
+            'icon-image': ['get', 'iconImageId'],
+            'icon-size': 0.6,
+            'icon-anchor': 'center',
+            'icon-allow-overlap': true,
+          },
+        })
 
-      const feature = features[0]
-      const properties = feature.properties as { id: string }
-
-      // Find the full POI object
-      const poi = pois.find((p) => p.id === properties.id)
-      if (poi) {
-        setSelectedPOI(poi)
+        source = map.getSource('pois') as GeoJSONSource | undefined
       }
+
+      if (source) {
+        source.setData(poisGeoJSON)
+        map.triggerRepaint()
+      }
+
+      const poiClickHandler = (e: mapboxgl.MapMouseEvent | mapboxgl.MapTouchEvent) => {
+        const features = map.queryRenderedFeatures(e.point, {
+          layers: ['poi-circles', 'poi-icons'],
+        }) as mapboxgl.GeoJSONFeature[]
+
+        if (!features?.length) return
+
+        const feature = features[0]
+        const properties = feature.properties as { id: string }
+
+        const poi = pois.find((p) => p.id === properties.id)
+        if (poi) {
+          setSelectedPOI(poi)
+        }
+      }
+
+      const handleMouseEnter = () => {
+        map.getCanvas().style.cursor = 'pointer'
+      }
+      const handleMouseLeave = () => {
+        map.getCanvas().style.cursor = ''
+      }
+
+      map.on('click', 'poi-circles', poiClickHandler)
+      map.on('touchend', 'poi-circles', poiClickHandler)
+      map.on('click', 'poi-icons', poiClickHandler)
+      map.on('touchend', 'poi-icons', poiClickHandler)
+      map.on('mouseenter', 'poi-circles', handleMouseEnter)
+      map.on('mouseleave', 'poi-circles', handleMouseLeave)
+      map.on('mouseenter', 'poi-icons', handleMouseEnter)
+      map.on('mouseleave', 'poi-icons', handleMouseLeave)
+
+      cleanupFns.push(() => {
+        map.off('click', 'poi-circles', poiClickHandler)
+        map.off('touchend', 'poi-circles', poiClickHandler)
+        map.off('click', 'poi-icons', poiClickHandler)
+        map.off('touchend', 'poi-icons', poiClickHandler)
+        map.off('mouseenter', 'poi-circles', handleMouseEnter)
+        map.off('mouseleave', 'poi-circles', handleMouseLeave)
+        map.off('mouseenter', 'poi-icons', handleMouseEnter)
+        map.off('mouseleave', 'poi-icons', handleMouseLeave)
+      })
     }
 
-    mapRef.current?.on('click', 'poi-circles', poiClickHandler)
-    mapRef.current?.on('touchend', 'poi-circles', poiClickHandler)
-    mapRef.current?.on('click', 'poi-icons', poiClickHandler)
-    mapRef.current?.on('touchend', 'poi-icons', poiClickHandler)
+    if (map.isStyleLoaded()) {
+      applyPoisToMap()
+    } else {
+      const onLoad = () => {
+        applyPoisToMap()
+        map.off('load', onLoad)
+      }
 
-    // ---- Cursor changes ----
-    map!.on('mouseenter', 'poi-circles', () => {
-      map!.getCanvas().style.cursor = 'pointer'
-    })
-    map!.on('mouseleave', 'poi-circles', () => {
-      map!.getCanvas().style.cursor = ''
-    })
-    map!.on('mouseenter', 'poi-icons', () => {
-      map!.getCanvas().style.cursor = 'pointer'
-    })
-    map!.on('mouseleave', 'poi-icons', () => {
-      map!.getCanvas().style.cursor = ''
-    })
+      map.on('load', onLoad)
+      cleanupFns.push(() => {
+        map.off('load', onLoad)
+      })
+    }
+
+    return () => {
+      cleanupFns.forEach((fn) => fn())
+    }
   }, [poisGeoJSON, pois, setSelectedPOI])
 
   // Fit map to include all available POIs when they load for the first time
   useEffect(() => {
     const map = mapRef.current
-    if (!map || !map.isStyleLoaded() || hasFitBoundsRef.current) return
-    if (!pois.length) return
+    if (!map || hasFitBoundsRef.current || !pois.length) return
 
-    const bounds = pois.reduce((acc, poi) => {
-      if (!acc) {
-        return new mapboxgl.LngLatBounds(poi.coordinates, poi.coordinates)
+    const fitToPois = () => {
+      const bounds = pois.reduce((acc, poi) => {
+        if (!acc) {
+          return new mapboxgl.LngLatBounds(poi.coordinates, poi.coordinates)
+        }
+
+        return acc.extend(poi.coordinates)
+      }, null as mapboxgl.LngLatBounds | null)
+
+      if (bounds) {
+        map.fitBounds(bounds, {
+          padding: 80,
+          maxZoom: 16,
+          duration: 1200,
+        })
+        hasFitBoundsRef.current = true
       }
+    }
 
-      return acc.extend(poi.coordinates)
-    }, null as mapboxgl.LngLatBounds | null)
+    if (map.isStyleLoaded()) {
+      fitToPois()
+      return
+    }
 
-    if (bounds) {
-      map.fitBounds(bounds, {
-        padding: 80,
-        maxZoom: 16,
-        duration: 1200,
-      })
-      hasFitBoundsRef.current = true
+    const onLoad = () => {
+      fitToPois()
+      map.off('load', onLoad)
+    }
+
+    map.on('load', onLoad)
+
+    return () => {
+      map.off('load', onLoad)
     }
   }, [pois])
 
