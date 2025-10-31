@@ -5,7 +5,11 @@ import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import { fetchFilteredPOIs } from '@/lib/poiApi'
+import {
+  fetchPOIsFromBackend,
+  filterPOIsByQuery,
+  filterPOIsByLocation,
+} from '@/lib/backendPoiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -73,29 +77,46 @@ export default function Map() {
   const addChatMessage = useGeneralStore((s) => s.addChatMessage)
   const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
 
+  const [allPOIs, setAllPOIs] = useState<POI[]>([])
   const [pois, setPois] = useState<POI[]>([])
-  const loadPOIs = useCallback(
-    async (query: string) => {
-      const requestId = latestRequestRef.current + 1
-      latestRequestRef.current = requestId
+  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
 
+  // Fetch all POIs from backend on mount
+  useEffect(() => {
+    const loadAllPOIs = async () => {
+      setIsLoadingPOIs(true)
       try {
-        const filteredPOIs = await fetchFilteredPOIs({
-          query,
-          userLocation: userLocation || undefined,
-          radius: 10, // 10km radius
-        })
-
-        if (latestRequestRef.current === requestId) {
-          setPois(filteredPOIs)
-        }
+        const backendPOIs = await fetchPOIsFromBackend(500)
+        setAllPOIs(backendPOIs)
+        setPois(backendPOIs) // Initially show all POIs
       } catch (error) {
-        if (latestRequestRef.current === requestId) {
-          console.error('Error fetching POIs:', error)
-        }
+        console.error('Error loading POIs from backend:', error)
+      } finally {
+        setIsLoadingPOIs(false)
       }
+    }
+
+    loadAllPOIs()
+  }, [])
+
+  // Filter POIs based on search query and user location
+  const filterPOIs = useCallback(
+    (query: string) => {
+      let filtered = allPOIs
+
+      // Apply search query filter
+      if (query.trim()) {
+        filtered = filterPOIsByQuery(filtered, query)
+      }
+
+      // Apply location-based filter if user location is available
+      if (userLocation) {
+        filtered = filterPOIsByLocation(filtered, userLocation, 10) // 10km radius
+      }
+
+      setPois(filtered)
     },
-    [userLocation]
+    [allPOIs, userLocation]
   )
 
   const handleSearchSubmit = useCallback(
@@ -109,9 +130,9 @@ export default function Map() {
         setSearchQuery('') // Clear input after sending message in chat mode
       }
 
-      loadPOIs(query)
+      filterPOIs(query)
     },
-    [activeChatPOI, addChatMessage, loadPOIs, setSearchQuery]
+    [activeChatPOI, addChatMessage, filterPOIs, setSearchQuery]
   )
 
   // Convert POIs to GeoJSON
@@ -166,14 +187,14 @@ export default function Map() {
     }
   }, [setUserLocation])
 
-  // Fetch POIs when search query changes (with debouncing)
+  // Filter POIs when search query changes (with debouncing)
   useEffect(() => {
     const timeoutId = setTimeout(() => {
-      loadPOIs(searchQuery)
+      filterPOIs(searchQuery)
     }, 500) // 500ms debounce
 
     return () => clearTimeout(timeoutId)
-  }, [searchQuery, loadPOIs])
+  }, [searchQuery, filterPOIs])
 
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return
@@ -218,9 +239,6 @@ export default function Map() {
     })
 
     mapRef.current.on('load', () => {
-      // Load initial POIs
-      loadPOIs('')
-
       // Fly to user location if we already have it (use ref to avoid closure issues)
       if (userLocationRef.current) {
         mapRef.current?.flyTo({
@@ -230,7 +248,7 @@ export default function Map() {
         })
       }
     })
-  }, [setFlyToLocation, setUserLocation, loadPOIs])
+  }, [setFlyToLocation, setUserLocation])
 
   // ---- Render POIs + layers ----
   useEffect(() => {
