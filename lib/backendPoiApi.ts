@@ -86,6 +86,18 @@ const getIconForType = (type: string): string => {
 /**
  * Transform backend POI to frontend POI format
  */
+const sanitizeNameCandidate = (value?: string | null) => {
+  if (!value) return null
+
+  const trimmed = value.trim()
+  if (!trimmed) return null
+
+  const lowered = trimmed.toLowerCase()
+  if (lowered === 'null' || lowered === 'undefined') return null
+
+  return trimmed
+}
+
 const transformBackendPOI = (backendPOI: BackendPOI): POI => {
   const {
     name,
@@ -97,12 +109,19 @@ const transformBackendPOI = (backendPOI: BackendPOI): POI => {
     quick_info,
   } = backendPOI
 
+  const typeName = sanitizeNameCandidate(type)?.toLowerCase()
+
+  const nameCandidates = [
+    sanitizeNameCandidate(name),
+    sanitizeNameCandidate(business_name),
+    sanitizeNameCandidate(title),
+    sanitizeNameCandidate(display_name),
+  ].filter((candidate): candidate is string => Boolean(candidate))
+
   const resolvedName =
-    name?.trim() ||
-    display_name?.trim() ||
-    business_name?.trim() ||
-    title?.trim() ||
-    location.address?.trim()
+    nameCandidates.find((candidate) => candidate.toLowerCase() !== typeName) ||
+    sanitizeNameCandidate(location.address) ||
+    'Unknown location'
 
   const latitude = typeof location.latitude === 'string' ? Number(location.latitude) : location.latitude
   const longitude =
@@ -110,7 +129,7 @@ const transformBackendPOI = (backendPOI: BackendPOI): POI => {
 
   return {
     id: backendPOI.id,
-    name: resolvedName ?? 'Unknown location',
+    name: resolvedName,
     type,
     icon: getIconForType(type),
     coordinates: [longitude, latitude],
