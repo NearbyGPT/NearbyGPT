@@ -145,7 +145,7 @@ export function filterPOIsByQuery(pois: POI[], query: string): POI[] {
   return pois.filter((poi) => {
     const matchesName = poi.name.toLowerCase().includes(lowerQuery)
     const matchesType = poi.type.toLowerCase().includes(lowerQuery)
-    const matchesAddress = poi.address?.toLowerCase().includes(lowerQuery)
+    const matchesAddress = (poi.address ?? '').toLowerCase().includes(lowerQuery)
 
     return matchesName || matchesType || matchesAddress
   })
