@@ -61,7 +61,6 @@ const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
 export default function Map() {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
-  const latestRequestRef = useRef(0)
   const userLocationRef = useRef<{ latitude: number; longitude: number } | null>(null)
 
   const selectedPOI = useGeneralStore((s) => s.selectedPOI)
@@ -79,20 +78,18 @@ export default function Map() {
 
   const [allPOIs, setAllPOIs] = useState<POI[]>([])
   const [pois, setPois] = useState<POI[]>([])
-  const [isLoadingPOIs, setIsLoadingPOIs] = useState(false)
+  const hasFitBoundsRef = useRef(false)
 
   // Fetch all POIs from backend on mount
   useEffect(() => {
     const loadAllPOIs = async () => {
-      setIsLoadingPOIs(true)
       try {
         const backendPOIs = await fetchPOIsFromBackend(500)
         setAllPOIs(backendPOIs)
         setPois(backendPOIs) // Initially show all POIs
+        hasFitBoundsRef.current = false
       } catch (error) {
         console.error('Error loading POIs from backend:', error)
-      } finally {
-        setIsLoadingPOIs(false)
       }
     }
 
@@ -115,6 +112,7 @@ export default function Map() {
       }
 
       setPois(filtered)
+      hasFitBoundsRef.current = false
     },
     [allPOIs, userLocation]
   )
@@ -332,6 +330,41 @@ export default function Map() {
       map!.getCanvas().style.cursor = ''
     })
   }, [poisGeoJSON, pois, setSelectedPOI])
+
+  // Fit map to include all available POIs when they load for the first time
+  useEffect(() => {
+    const map = mapRef.current
+    if (!map || !map.isStyleLoaded() || hasFitBoundsRef.current) return
+    if (!pois.length) return
+
+    const bounds = pois.reduce((acc, poi) => {
+      if (!acc) {
+        return new mapboxgl.LngLatBounds(poi.coordinates, poi.coordinates)
+      }
+
+      return acc.extend(poi.coordinates)
+    }, null as mapboxgl.LngLatBounds | null)
+
+    if (bounds) {
+      map.fitBounds(bounds, {
+        padding: 80,
+        maxZoom: 16,
+        duration: 1200,
+      })
+      hasFitBoundsRef.current = true
+    }
+  }, [pois])
+
+  // Fly to the selected POI when it changes
+  useEffect(() => {
+    if (!selectedPOI || !mapRef.current?.isStyleLoaded()) return
+
+    mapRef.current.flyTo({
+      center: selectedPOI.coordinates,
+      zoom: 17,
+      duration: 1200,
+    })
+  }, [selectedPOI])
 
   return (
     <>

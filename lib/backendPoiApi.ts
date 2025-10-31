@@ -2,17 +2,20 @@ import { POI } from '@/components/POICard'
 
 export interface BackendPOI {
   id: string
-  name: string
+  name?: string
+  display_name?: string
+  business_name?: string
+  title?: string
   type: string
   location: {
-    latitude: number
-    longitude: number
+    latitude: number | string
+    longitude: number | string
     address: string
     city: string
     state: string
     zip_code: string
   }
-  quick_info: string
+  quick_info?: string | null
 }
 
 export interface BackendPOIResponse {
@@ -84,14 +87,35 @@ const getIconForType = (type: string): string => {
  * Transform backend POI to frontend POI format
  */
 const transformBackendPOI = (backendPOI: BackendPOI): POI => {
+  const {
+    name,
+    display_name,
+    business_name,
+    title,
+    type,
+    location,
+    quick_info,
+  } = backendPOI
+
+  const resolvedName =
+    name?.trim() ||
+    display_name?.trim() ||
+    business_name?.trim() ||
+    title?.trim() ||
+    location.address?.trim()
+
+  const latitude = typeof location.latitude === 'string' ? Number(location.latitude) : location.latitude
+  const longitude =
+    typeof location.longitude === 'string' ? Number(location.longitude) : location.longitude
+
   return {
     id: backendPOI.id,
-    name: backendPOI.name,
-    type: backendPOI.type,
-    icon: getIconForType(backendPOI.type),
-    coordinates: [backendPOI.location.longitude, backendPOI.location.latitude],
-    address: `${backendPOI.location.address}, ${backendPOI.location.city}, ${backendPOI.location.state}`,
-    priceLevel: backendPOI.quick_info || undefined,
+    name: resolvedName ?? 'Unknown location',
+    type,
+    icon: getIconForType(type),
+    coordinates: [longitude, latitude],
+    address: `${location.address}, ${location.city}, ${location.state}`,
+    priceLevel: quick_info?.trim() || undefined,
   }
 }
 
@@ -125,7 +149,9 @@ export async function fetchPOIsFromBackend(limit: number = 500): Promise<POI[]> 
     const data: BackendPOIResponse = await response.json()
     console.log(`Fetched ${data.count} POIs from backend`)
 
-    return data.results.map(transformBackendPOI)
+    return data.results
+      .map(transformBackendPOI)
+      .filter((poi) => Number.isFinite(poi.coordinates[0]) && Number.isFinite(poi.coordinates[1]))
   } catch (error) {
     console.error('Error fetching POIs from backend:', error)
     return []
