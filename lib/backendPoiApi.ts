@@ -99,15 +99,7 @@ const sanitizeNameCandidate = (value?: string | null) => {
 }
 
 const transformBackendPOI = (backendPOI: BackendPOI): POI => {
-  const {
-    name,
-    display_name,
-    business_name,
-    title,
-    type,
-    location,
-    quick_info,
-  } = backendPOI
+  const { name, display_name, business_name, title, type, location, quick_info } = backendPOI
 
   const typeName = sanitizeNameCandidate(type)?.toLowerCase()
 
@@ -124,15 +116,14 @@ const transformBackendPOI = (backendPOI: BackendPOI): POI => {
     'Unknown location'
 
   const latitude = typeof location.latitude === 'string' ? Number(location.latitude) : location.latitude
-  const longitude =
-    typeof location.longitude === 'string' ? Number(location.longitude) : location.longitude
+  const longitude = typeof location.longitude === 'string' ? Number(location.longitude) : location.longitude
 
   return {
     id: backendPOI.id,
     name: resolvedName,
     type,
     icon: getIconForType(type),
-    coordinates: [longitude, latitude],
+    coordinates: [latitude, longitude],
     address: `${location.address}, ${location.city}, ${location.state}`,
     priceLevel: quick_info?.trim() || undefined,
   }
@@ -200,22 +191,14 @@ export function filterPOIsByQuery(pois: POI[], query: string): POI[] {
  * Calculate distance between two coordinates using Haversine formula
  * Returns distance in kilometers
  */
-function calculateDistance(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
+function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371 // Earth's radius in kilometers
   const dLat = toRad(lat2 - lat1)
   const dLon = toRad(lon2 - lon1)
 
   const a =
     Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRad(lat1)) *
-      Math.cos(toRad(lat2)) *
-      Math.sin(dLon / 2) *
-      Math.sin(dLon / 2)
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2)
 
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
   const distance = R * c
