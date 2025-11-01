@@ -123,7 +123,7 @@ const transformBackendPOI = (backendPOI: BackendPOI): POI => {
     name: resolvedName,
     type,
     icon: getIconForType(type),
-    coordinates: [latitude, longitude],
+    coordinates: [longitude, latitude], // GeoJSON format: [longitude, latitude]
     address: `${location.address}, ${location.city}, ${location.state}`,
     priceLevel: quick_info?.trim() || undefined,
   }
