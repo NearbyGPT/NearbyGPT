@@ -58,6 +58,14 @@ const ensureEmojiImages = (map: mapboxgl.Map, pois: POI[]) => {
   })
 }
 
+const createMessageId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID()
+  }
+
+  return `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
+}
+
 export default function Map() {
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
@@ -79,6 +87,8 @@ export default function Map() {
   const [allPOIs, setAllPOIs] = useState<POI[]>([])
   const [pois, setPois] = useState<POI[]>([])
   const hasFitBoundsRef = useRef(false)
+  const skipSearchSyncRef = useRef(false)
+  const [isChatExpanded, setIsChatExpanded] = useState(true)
 
   // Fetch all POIs from backend on mount
   useEffect(() => {
@@ -119,18 +129,29 @@ export default function Map() {
 
   const handleSearchSubmit = useCallback(
     (query: string) => {
-      if (activeChatPOI) {
-        addChatMessage({
-          id: `${activeChatPOI.id}-${Date.now()}`,
-          role: 'user',
-          text: query,
-        })
-        setSearchQuery('') // Clear input after sending message in chat mode
-      }
+      if (!query) return
+
+      const baseMessageId = createMessageId()
+
+      addChatMessage({
+        id: `${baseMessageId}-user`,
+        role: 'user',
+        text: query,
+      })
 
       filterPOIs(query)
+
+      addChatMessage({
+        id: `${baseMessageId}-assistant`,
+        role: 'assistant',
+        text: `I am filtering ${query} ... done.`,
+      })
+
+      skipSearchSyncRef.current = true
+      setSearchQuery('')
+      setIsChatExpanded(true)
     },
-    [activeChatPOI, addChatMessage, filterPOIs, setSearchQuery]
+    [addChatMessage, filterPOIs, setSearchQuery]
   )
 
   // Convert POIs to GeoJSON
@@ -187,6 +208,11 @@ export default function Map() {
 
   // Filter POIs when search query changes (with debouncing)
   useEffect(() => {
+    if (skipSearchSyncRef.current) {
+      skipSearchSyncRef.current = false
+      return
+    }
+
     const timeoutId = setTimeout(() => {
       filterPOIs(searchQuery)
     }, 500) // 500ms debounce
@@ -197,7 +223,7 @@ export default function Map() {
   useEffect(() => {
     if (mapRef.current || !mapContainer.current) return
 
-    mapRef.current = new mapboxgl.Map({
+    const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
       center: [29.9187, 31.2001],
@@ -206,8 +232,10 @@ export default function Map() {
       logoPosition: 'top-left',
     })
 
-    mapRef.current.addControl(new mapboxgl.NavigationControl(), 'top-right')
-    mapRef.current.addControl(new mapboxgl.AttributionControl({ compact: true }), 'top-left')
+    mapRef.current = map
+
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right')
+    map.addControl(new mapboxgl.AttributionControl({ compact: true }), 'top-left')
 
     // Add geolocation control
     const geolocateControl = new mapboxgl.GeolocateControl({
@@ -217,35 +245,54 @@ export default function Map() {
       trackUserLocation: true,
       showUserHeading: true,
     })
-    mapRef.current.addControl(geolocateControl, 'top-right')
+    map.addControl(geolocateControl, 'top-right')
 
-    // Update user location in store when geolocate triggers
-    geolocateControl.on('geolocate', (e: GeolocationPosition) => {
+    const handleGeolocate = (e: GeolocationPosition) => {
       setUserLocation({
         latitude: e.coords.latitude,
         longitude: e.coords.longitude,
       })
-    })
+    }
+
+    // Update user location in store when geolocate triggers
+    geolocateControl.on('geolocate', handleGeolocate)
 
     // Set flyToLocation function
     setFlyToLocation((lng: number, lat: number) => {
-      mapRef.current?.flyTo({
+      map.flyTo({
         center: [lng, lat],
         zoom: 15,
         duration: 2000,
       })
     })
 
-    mapRef.current.on('load', () => {
+    map.on('load', () => {
       // Fly to user location if we already have it (use ref to avoid closure issues)
       if (userLocationRef.current) {
-        mapRef.current?.flyTo({
+        map.flyTo({
           center: [userLocationRef.current.longitude, userLocationRef.current.latitude],
           zoom: 15,
           duration: 2000,
         })
       }
     })
+
+    const collapseEvents: Array<'click' | 'dragstart' | 'rotatestart' | 'pitchstart' | 'touchstart'> = [
+      'click',
+      'dragstart',
+      'rotatestart',
+      'pitchstart',
+      'touchstart',
+    ]
+    const collapseChat = () => setIsChatExpanded(false)
+    collapseEvents.forEach((eventName) => map.on(eventName, collapseChat))
+
+    return () => {
+      geolocateControl.off('geolocate', handleGeolocate)
+      collapseEvents.forEach((eventName) => map.off(eventName, collapseChat))
+      map.remove()
+      mapRef.current = null
+    }
   }, [setFlyToLocation, setUserLocation])
 
   // ---- Render POIs + layers ----
@@ -428,7 +475,8 @@ export default function Map() {
         }}
         onSubmit={handleSearchSubmit}
         messages={chatMessages}
-        isChatActive={Boolean(activeChatPOI)}
+        isExpanded={isChatExpanded}
+        onExpand={() => setIsChatExpanded(true)}
       />
       {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
     </>

@@ -6,29 +6,73 @@
 - Cross-cutting utilities and API helpers are collected in `lib/`; shared state is handled through Zustand stores in `store/generalStore.ts`.
 - Static assets (icons, manifest, favicons) belong in `public/`; keep any large media or generated files out of the repository.
 
-## Build, Test, and Development Commands
-- `npm run dev` launches the local development server with Turbopack hot reloading.
-- `npm run build` produces an optimized production bundle; run it before opening a pull request to catch compile-time issues.
-- `npm run start` serves the production build locally, useful for sanity checks after bundling.
-- `npm run lint` executes ESLint across the codebase; it must pass before merging.
+## Code
+- Always prefer to create new component instead of creating fat components unless there is a very good reason.
+- Prefer Typescript types over interfaces, unless there is a very good reason.
+- Always use/install shadcn components whenever you need a new component like Card, Button, Input etc..
 
-## Coding Style & Naming Conventions
-- Use TypeScript everywhere; prefer explicit types on exported functions and hook return values.
-- Follow React conventions: components and hooks in PascalCase (`MapSearchBar`) or camelCase (`useChatStore`), files mirroring the exported symbol.
-- Styling relies on Tailwind CSS 4 utilities; co-locate class logic near the JSX and keep conditional classes readable with `clsx`/`tailwind-merge`.
-- Run `npm run lint` to enforce formatting; configure editor tooling to respect the repository’s ESLint and TypeScript settings.
+## Commands
 
-## Testing Guidelines
-- Automated tests are not yet in place; new features should ship with lightweight unit or integration tests when practical.
-- Prefer colocated test files using the `.test.ts` or `.test.tsx` suffix and mirror the directory structure of the source under test.
-- Add smoke tests for critical flows (map initialization, chat submission) and document any manual QA steps in the pull request description.
+### Development
+- `npm run dev` - Start development server with Turbopack (recommended)
+- `npm run build` - Build for production using Turbopack
+- `npm run start` - Start production server
+- `npm run lint` - Run ESLint
+- `bunx --bun shadcn@latest add <component_name>` - Add wanted component to the project
 
-## Commit & Pull Request Guidelines
-- Commits follow sentence-case summaries (e.g., “Fix POI card text contrast”); keep them focused and include rationale in the body when complexity warrants it.
-- Reference issue IDs or discussion links when available, and push incremental commits instead of force-pushing shared branches.
-- Pull requests should describe the change, outline testing performed (`npm run lint`, manual verification), and attach screenshots or recordings for UI-affecting updates.
+Note: This project uses Turbopack for both development and production builds for improved performance.
 
-## Configuration & Environment
-- Declare secrets such as `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` and `NEXT_PUBLIC_BACKEND_API_URL` in `.env.local`; never commit concrete values.
-- Mapbox GL requires a valid access token before `components/Map.tsx` will render correctly, so confirm the token when testing locally.
-- When integrating new services, update the README with setup instructions and guard client-only env vars with `NEXT_PUBLIC_` prefixes.
+## Architecture Overview
+
+This is a Next.js 15 (App Router) map-based POI (Point of Interest) discovery application with the following key architecture:
+
+### Core Components
+- **Map Component** (`components/Map.tsx`) - Main Mapbox GL JS integration with POI rendering, user location, and interactive features
+- **POI System** - Points of interest fetched from backend API and displayed on map with emoji icons
+- **Search & Chat** - Integrated search bar that doubles as a chat interface when POI is selected
+- **State Management** - Zustand store with persistence for app state
+
+### Data Flow
+1. **POI Loading**: App fetches POIs from backend API via `lib/backendPoiApi.ts`
+2. **Map Integration**: POIs are transformed to GeoJSON and rendered on Mapbox with custom emoji markers
+3. **Filtering**: POIs filtered by search query and user location proximity (10km radius)
+4. **User Interaction**: Click POI → show details card; search activates filtering or chat mode
+
+### Key Technical Details
+
+#### State Management (`store/generalStore.ts`)
+- Uses Zustand with persistence middleware
+- Manages: selected POI, search query, user location, chat state
+- Zustand partialize set to empty object (no state persisted to localStorage)
+
+#### POI API Integration (`lib/backendPoiApi.ts`)
+- Backend POI format transformation to frontend POI structure
+- Smart name resolution (handles null/duplicate names from backend)
+- Type-to-emoji mapping for 30+ business categories
+- Haversine distance calculation for location filtering
+- Environment variable: `NEXT_PUBLIC_BACKEND_API_URL`
+
+#### Map Implementation
+- Mapbox GL JS with `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN`
+- Custom emoji markers generated using Canvas API
+- GeoJSON source for POI data with circle + icon layers
+- Auto-fit bounds to POIs on load, fly-to on user location/POI selection
+- Geolocation control integration
+
+#### UI Framework
+- Tailwind CSS with custom config
+- Radix UI primitives for base components
+- Lucide React icons
+- Sonner for toast notifications
+- next-themes for theme support
+
+### Environment Variables Required
+- `NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN` - Mapbox API key
+- `NEXT_PUBLIC_BACKEND_API_URL` - Backend API endpoint for POI data
+
+### File Structure
+- `/app` - Next.js App Router pages (layout, page, manifest)
+- `/components` - React components (Map, POICard, FloatingChat, UI primitives)
+- `/lib` - Utilities and API functions
+- `/store` - Zustand state management
+- `/public` - Static assets

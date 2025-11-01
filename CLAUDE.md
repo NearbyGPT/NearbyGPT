@@ -2,6 +2,11 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Code
+- Always prefer to create new component instead of creating fat components unless there is a very good reason.
+- Prefer Typescript types over interfaces, unless there is a very good reason.
+- Always use/install shadcn components whenever you need a new component like Card, Button, Input etc..
+
 ## Commands
 
 ### Development
@@ -9,6 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - `npm run build` - Build for production using Turbopack
 - `npm run start` - Start production server
 - `npm run lint` - Run ESLint
+- `bunx --bun shadcn@latest add <component_name>` - Add wanted component to the project
 
 Note: This project uses Turbopack for both development and production builds for improved performance.
 

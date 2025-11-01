@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useRef } from 'react'
-import { Search, Send, X } from 'lucide-react'
+import { Search, X, ArrowUpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
 
@@ -13,7 +13,8 @@ interface MapSearchBarProps {
   onClearChat?: () => void
   onSubmit?: (value: string) => void
   messages?: ChatMessage[]
-  isChatActive?: boolean
+  isExpanded?: boolean
+  onExpand?: () => void
 }
 
 export default function MapSearchBar({
@@ -24,16 +25,19 @@ export default function MapSearchBar({
   onClearChat,
   onSubmit,
   messages = [],
-  isChatActive = false,
+  isExpanded = true,
+  onExpand,
 }: MapSearchBarProps) {
   const chatLabel = activeChatName ? `Chatting with ${activeChatName}` : null
-  const hasMessages = isChatActive && messages.length > 0
+  const hasMessages = messages.length > 0
+  const showMessages = hasMessages && isExpanded
+  const lastMessage = hasMessages ? messages[messages.length - 1] : null
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    if (!hasMessages) return
+    if (!showMessages) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
-  }, [hasMessages, messages.length])
+  }, [showMessages, messages.length])
 
   const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
@@ -43,26 +47,43 @@ export default function MapSearchBar({
     onSubmit?.(trimmedValue)
   }
 
+  const handleFocus = () => {
+    onExpand?.()
+  }
+
   return (
     <div
       className={cn(
         'absolute bottom-6 left-1/2 -translate-x-1/2 z-10 w-full px-4 transition-all',
-        chatLabel || hasMessages ? 'max-w-2xl' : 'max-w-md'
+        chatLabel || showMessages ? 'max-w-2xl' : 'max-w-lg'
       )}
     >
       <div
         className={cn(
-          'rounded-2xl bg-white shadow-xl border border-transparent px-4 py-4 sm:px-5',
-          hasMessages && 'flex h-[50vh] flex-col'
+          'rounded-2xl bg-white shadow-2xl border border-transparent px-4 py-4 sm:px-5',
+          showMessages && 'flex h-[50vh] flex-col'
         )}
       >
-        {hasMessages && (
+        {hasMessages && !showMessages && (
+          <button
+            type="button"
+            onClick={onExpand}
+            className="mb-3 w-full rounded-xl border border-[var(--color-primary-soft)] bg-[var(--color-background-light)] px-4 py-2 text-left shadow-sm transition-colors hover:border-[var(--color-primary)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-ring)] focus:ring-offset-2 focus:ring-offset-white"
+            aria-label="Expand chat history"
+          >
+            <p className="text-sm font-semibold text-[var(--color-primary-dark)]">Chat hidden</p>
+            {lastMessage && (
+              <p className="mt-1 line-clamp-1 text-xs text-[var(--color-dark)] opacity-70">
+                {lastMessage.role === 'assistant' ? 'AI: ' : 'You: '}
+                {lastMessage.text}
+              </p>
+            )}
+          </button>
+        )}
+        {showMessages && (
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
             {messages.map((message) => (
-              <div
-                key={message.id}
-                className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}
-              >
+              <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                 <div
                   className={cn(
                     'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm',
@@ -80,7 +101,7 @@ export default function MapSearchBar({
         )}
         <form
           onSubmit={handleSubmit}
-          className={cn('flex items-center gap-3', hasMessages && 'mt-4')}
+          className={cn('flex items-center gap-3', showMessages ? 'mt-4' : hasMessages ? 'mt-2' : undefined)}
         >
           <Search className="h-5 w-5 flex-shrink-0 text-[var(--color-primary)]" />
           <input
@@ -88,6 +109,7 @@ export default function MapSearchBar({
             value={value}
             onChange={(e) => onChange(e.target.value)}
             placeholder={chatLabel ? 'Ask this business anything…' : placeholder}
+            onFocus={handleFocus}
             className="flex-1 min-w-0 bg-transparent text-base text-[var(--color-dark)] placeholder:text-[var(--color-gray)] placeholder:opacity-70 focus:outline-none"
           />
           <button
@@ -95,7 +117,7 @@ export default function MapSearchBar({
             className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[var(--color-primary-dark)] focus:outline-none focus:ring-2 focus:ring-[var(--color-primary-ring)] focus:ring-offset-2 focus:ring-offset-white"
             aria-label="Send search"
           >
-            <Send className="h-4 w-4" />
+            <ArrowUpCircle className="h-4 w-4" />
             <span className="hidden sm:inline">Send</span>
           </button>
         </form>
@@ -103,7 +125,7 @@ export default function MapSearchBar({
           <div
             className={cn(
               'mt-3 flex items-center gap-2 rounded-lg bg-[var(--color-primary-soft)] px-3 py-2',
-              hasMessages && 'mt-4'
+              showMessages && 'mt-4'
             )}
           >
             <span className="flex-1 text-sm font-medium leading-snug text-[var(--color-primary-dark)] break-words">
