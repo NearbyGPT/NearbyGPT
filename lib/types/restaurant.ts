@@ -47,8 +47,8 @@ export type Restaurant = {
   latitude: number;
   longitude: number;
   city: string;
-  state_governorate: string;
-  street_address: string;
+  state: string;
+  address: string;
   phone_number?: string;
   website?: string;
   tiktok?: string;
@@ -60,14 +60,14 @@ export type Restaurant = {
   parking_availability: ParkingAvailability;
   smoking_section_availability: SmokingSectionAvailability;
   outdoor_family_amenities: OutdoorFamilyAmenity[];
-  atmosphere_vibe: string;
+  description: string;
   service_style: ServiceStyle;
   cuisine_mix: string;
   delivery_timing_insights: string;
   health_positioning: HealthPositioning;
   opening_hours: string;
   meal_periods_served: MealPeriod[];
-  typical_price_range: PriceRange;
+  price_range: PriceRange;
   accepted_payment_methods: PaymentMethod[];
   reviews_influencers: string;
 };
