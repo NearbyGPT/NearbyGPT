@@ -71,8 +71,8 @@ export function RestaurantForm({
     latitude: initialData?.latitude || 0,
     longitude: initialData?.longitude || 0,
     city: initialData?.city || "",
-    state_governorate: initialData?.state_governorate || "",
-    street_address: initialData?.street_address || "",
+    state: initialData?.state || "",
+    address: initialData?.address || "",
     phone_number: initialData?.phone_number || "",
     website: initialData?.website || "",
     tiktok: initialData?.tiktok || "",
@@ -85,14 +85,14 @@ export function RestaurantForm({
     smoking_section_availability:
       initialData?.smoking_section_availability || "Non smoking section only",
     outdoor_family_amenities: initialData?.outdoor_family_amenities || [],
-    atmosphere_vibe: initialData?.atmosphere_vibe || "",
+    description: initialData?.description || "",
     service_style: initialData?.service_style || "Dine-in only",
     cuisine_mix: initialData?.cuisine_mix || "",
     delivery_timing_insights: initialData?.delivery_timing_insights || "",
     health_positioning: initialData?.health_positioning || "balanced",
     opening_hours: initialData?.opening_hours || "",
     meal_periods_served: initialData?.meal_periods_served || [],
-    typical_price_range: initialData?.typical_price_range || "mid-range",
+    price_range: initialData?.price_range || "mid-range",
     accepted_payment_methods: initialData?.accepted_payment_methods || [],
     reviews_influencers: initialData?.reviews_influencers || "",
   });
@@ -186,26 +186,26 @@ export function RestaurantForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="state_governorate">State/Governorate *</Label>
+            <Label htmlFor="state">State/Governorate *</Label>
             <Input
-              id="state_governorate"
+              id="state"
               required
-              value={formData.state_governorate}
+              value={formData.state}
               onChange={(e) =>
-                setFormData({ ...formData, state_governorate: e.target.value })
+                setFormData({ ...formData, state: e.target.value })
               }
               placeholder="Enter state or governorate"
             />
           </div>
 
           <div className="space-y-2 md:col-span-2">
-            <Label htmlFor="street_address">Street Address *</Label>
+            <Label htmlFor="address">Street Address *</Label>
             <Input
-              id="street_address"
+              id="address"
               required
-              value={formData.street_address}
+              value={formData.address}
               onChange={(e) =>
-                setFormData({ ...formData, street_address: e.target.value })
+                setFormData({ ...formData, address: e.target.value })
               }
               placeholder="Enter street address"
             />
@@ -468,13 +468,13 @@ export function RestaurantForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="atmosphere_vibe">Atmosphere or Vibe *</Label>
+            <Label htmlFor="description">Description or Atmosphere *</Label>
             <Textarea
-              id="atmosphere_vibe"
+              id="description"
               required
-              value={formData.atmosphere_vibe}
+              value={formData.description}
               onChange={(e) =>
-                setFormData({ ...formData, atmosphere_vibe: e.target.value })
+                setFormData({ ...formData, description: e.target.value })
               }
               placeholder="Describe the restaurant's atmosphere..."
               rows={3}
@@ -573,14 +573,14 @@ export function RestaurantForm({
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="typical_price_range">Typical Price Range *</Label>
+            <Label htmlFor="price_range">Price Range *</Label>
             <Select
-              value={formData.typical_price_range}
+              value={formData.price_range}
               onValueChange={(value: PriceRange) =>
-                setFormData({ ...formData, typical_price_range: value })
+                setFormData({ ...formData, price_range: value })
               }
             >
-              <SelectTrigger id="typical_price_range">
+              <SelectTrigger id="price_range">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
