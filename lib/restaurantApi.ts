@@ -1,12 +1,24 @@
 import { Restaurant, RestaurantFormData } from "./types/restaurant";
 
-const API_BASE_URL = "https://api.nearbygpt.app/api/v1";
+/**
+ * Get the API base URL from environment variable
+ */
+function getApiBaseUrl(): string {
+  const backendUrl = process.env.NEXT_PUBLIC_BACKEND_API_URL;
+
+  if (!backendUrl) {
+    throw new Error("NEXT_PUBLIC_BACKEND_API_URL is not defined");
+  }
+
+  return `${backendUrl}/api/v1`;
+}
 
 /**
  * Fetch all restaurants from the backend
  */
 export async function getRestaurants(): Promise<Restaurant[]> {
-  const response = await fetch(`${API_BASE_URL}/restaurants`);
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/restaurants`);
 
   if (!response.ok) {
     throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
@@ -21,7 +33,8 @@ export async function getRestaurants(): Promise<Restaurant[]> {
 export async function createRestaurant(
   data: RestaurantFormData
 ): Promise<Restaurant> {
-  const response = await fetch(`${API_BASE_URL}/restaurants`, {
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/restaurants`, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -43,7 +56,8 @@ export async function updateRestaurant(
   restaurantId: string,
   data: Partial<RestaurantFormData>
 ): Promise<Restaurant> {
-  const response = await fetch(`${API_BASE_URL}/restaurants/${restaurantId}`, {
+  const apiBaseUrl = getApiBaseUrl();
+  const response = await fetch(`${apiBaseUrl}/restaurants/${restaurantId}`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
