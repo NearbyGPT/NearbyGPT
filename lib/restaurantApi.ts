@@ -24,7 +24,17 @@ export async function getRestaurants(): Promise<Restaurant[]> {
     throw new Error(`Failed to fetch restaurants: ${response.statusText}`);
   }
 
-  return response.json();
+  const data = await response.json();
+
+  if (Array.isArray(data)) {
+    return data;
+  }
+
+  if (data && Array.isArray((data as { restaurants?: Restaurant[] }).restaurants)) {
+    return (data as { restaurants: Restaurant[] }).restaurants;
+  }
+
+  throw new Error("Unexpected restaurants response shape");
 }
 
 /**
