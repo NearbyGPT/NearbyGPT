@@ -525,7 +525,7 @@ export function RestaurantForm({
         <CardHeader>
           <CardTitle>Operating Hours & Pricing</CardTitle>
           <CardDescription>
-            When you're open and pricing information
+            When you&apos;re open and pricing information
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
