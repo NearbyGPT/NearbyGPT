@@ -1,7 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { getChangedFields } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -36,7 +37,7 @@ import {
 
 type RestaurantFormProps = {
   initialData?: Restaurant;
-  onSubmit: (data: RestaurantFormData) => Promise<void>;
+  onSubmit: (data: RestaurantFormData | Partial<RestaurantFormData>) => Promise<void>;
   isLoading?: boolean;
 };
 
@@ -66,6 +67,9 @@ export function RestaurantForm({
   onSubmit,
   isLoading = false,
 }: RestaurantFormProps) {
+  // Track original data to detect changes
+  const originalDataRef = useRef<RestaurantFormData | null>(null);
+
   const [formData, setFormData] = useState<RestaurantFormData>({
     name: initialData?.name || "",
     latitude: initialData?.latitude || 0,
@@ -99,7 +103,7 @@ export function RestaurantForm({
 
   // Update form data when initialData changes
   useEffect(() => {
-    setFormData({
+    const newFormData: RestaurantFormData = {
       name: initialData?.name || "",
       latitude: initialData?.latitude || 0,
       longitude: initialData?.longitude || 0,
@@ -128,12 +132,26 @@ export function RestaurantForm({
       price_range: initialData?.price_range || "mid-range",
       accepted_payment_methods: initialData?.accepted_payment_methods || [],
       reviews_influencers: initialData?.reviews_influencers || "",
-    });
+    };
+
+    setFormData(newFormData);
+    // Store a snapshot of the original data for comparison on submit
+    originalDataRef.current = { ...newFormData };
   }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    await onSubmit(formData);
+
+    // If this is an edit (we have original data), only send changed fields
+    if (initialData && originalDataRef.current) {
+      const changedFields = getChangedFields(originalDataRef.current, formData);
+      console.log("Sending only changed fields:", Object.keys(changedFields));
+      await onSubmit(changedFields as RestaurantFormData);
+    } else {
+      // For new restaurants, send all data
+      console.log("Creating new restaurant with all fields");
+      await onSubmit(formData);
+    }
   };
 
   const handleCheckboxChange = <T extends string>(

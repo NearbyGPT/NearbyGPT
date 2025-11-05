@@ -66,11 +66,11 @@ export default function ManageRestaurantPage() {
     }
   }, [selectedRestaurantId, restaurants]);
 
-  const handleSubmit = async (data: RestaurantFormData) => {
+  const handleSubmit = async (data: RestaurantFormData | Partial<RestaurantFormData>) => {
     setIsLoading(true);
     try {
       if (mode === "edit" && selectedRestaurantId) {
-        // Update existing restaurant
+        // Update existing restaurant - data may contain only changed fields
         const updated = await updateRestaurant(selectedRestaurantId, data);
         toast.success("Restaurant updated successfully!");
 
@@ -80,8 +80,8 @@ export default function ManageRestaurantPage() {
         );
         setSelectedRestaurant(updated);
       } else {
-        // Create new restaurant
-        const created = await createRestaurant(data);
+        // Create new restaurant - data should contain all required fields
+        const created = await createRestaurant(data as RestaurantFormData);
         toast.success("Restaurant created successfully!");
 
         // Add the new restaurant to the list
