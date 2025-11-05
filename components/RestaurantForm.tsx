@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,6 +96,40 @@ export function RestaurantForm({
     accepted_payment_methods: initialData?.accepted_payment_methods || [],
     reviews_influencers: initialData?.reviews_influencers || "",
   });
+
+  // Update form data when initialData changes
+  useEffect(() => {
+    setFormData({
+      name: initialData?.name || "",
+      latitude: initialData?.latitude || 0,
+      longitude: initialData?.longitude || 0,
+      city: initialData?.city || "",
+      state: initialData?.state || "",
+      address: initialData?.address || "",
+      phone_number: initialData?.phone_number || "",
+      website: initialData?.website || "",
+      tiktok: initialData?.tiktok || "",
+      facebook: initialData?.facebook || "",
+      instagram: initialData?.instagram || "",
+      whatsapp: initialData?.whatsapp || "",
+      location_neighborhood: initialData?.location_neighborhood || "",
+      dining_intention: initialData?.dining_intention || "dine-in",
+      parking_availability: initialData?.parking_availability || "No",
+      smoking_section_availability:
+        initialData?.smoking_section_availability || "Non smoking section only",
+      outdoor_family_amenities: initialData?.outdoor_family_amenities || [],
+      description: initialData?.description || "",
+      service_style: initialData?.service_style || "Dine-in only",
+      cuisine_mix: initialData?.cuisine_mix || "",
+      delivery_timing_insights: initialData?.delivery_timing_insights || "",
+      health_positioning: initialData?.health_positioning || "balanced",
+      opening_hours: initialData?.opening_hours || "",
+      meal_periods_served: initialData?.meal_periods_served || [],
+      price_range: initialData?.price_range || "mid-range",
+      accepted_payment_methods: initialData?.accepted_payment_methods || [],
+      reviews_influencers: initialData?.reviews_influencers || "",
+    });
+  }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
