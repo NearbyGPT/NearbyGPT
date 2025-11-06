@@ -1,4 +1,17 @@
-import { Restaurant, RestaurantFormData, BackendRestaurant } from "./types/restaurant";
+import {
+  Restaurant,
+  RestaurantFormData,
+  BackendRestaurant,
+  DiningIntention,
+  ParkingAvailability,
+  SmokingSectionAvailability,
+  OutdoorFamilyAmenity,
+  ServiceStyle,
+  HealthPositioning,
+  MealPeriod,
+  PriceRange,
+  PaymentMethod,
+} from "./types/restaurant";
 
 /**
  * Get the API base URL from environment variable
@@ -32,19 +45,19 @@ function transformBackendToFrontend(backend: BackendRestaurant): Restaurant {
     instagram: backend.instagram || "",
     whatsapp: backend.whatsapp || "",
     location_neighborhood: backend.neighborhood || "",
-    dining_intention: (backend.dining_intention as any) || "dine-in",
-    parking_availability: (backend.parking_availability as any) || "No",
-    smoking_section_availability: (backend.smoking_section as any) || "Non smoking section only",
-    outdoor_family_amenities: (backend.outdoor_amenities || []) as any[],
+    dining_intention: (backend.dining_intention as DiningIntention) || "dine-in",
+    parking_availability: (backend.parking_availability as ParkingAvailability) || "No",
+    smoking_section_availability: (backend.smoking_section as SmokingSectionAvailability) || "Non smoking section only",
+    outdoor_family_amenities: (backend.outdoor_amenities || []) as OutdoorFamilyAmenity[],
     description: backend.description || "",
-    service_style: (backend.service_style as any) || "Dine-in only",
+    service_style: (backend.service_style as ServiceStyle) || "Dine-in only",
     cuisine_mix: (backend.cuisine_types || []).join(", "),
     delivery_timing_insights: backend.delivery_timing_insights || "",
-    health_positioning: (backend.health_positioning as any) || "balanced",
+    health_positioning: (backend.health_positioning as HealthPositioning) || "balanced",
     opening_hours: backend.opening_hours_text || "",
-    meal_periods_served: (backend.meal_periods || []) as any[],
-    price_range: (backend.price_range as any) || "mid-range",
-    accepted_payment_methods: (backend.payment_methods || []) as any[],
+    meal_periods_served: (backend.meal_periods || []) as MealPeriod[],
+    price_range: (backend.price_range as PriceRange) || "mid-range",
+    accepted_payment_methods: (backend.payment_methods || []) as PaymentMethod[],
     reviews_influencers: backend.reviews_influencers || "",
   };
 }
