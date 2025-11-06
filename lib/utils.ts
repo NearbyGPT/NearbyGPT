@@ -9,7 +9,7 @@ export function cn(...inputs: ClassValue[]) {
  * Compare two objects and return only the changed fields from the updated object
  * Handles arrays by doing deep equality checks
  */
-export function getChangedFields<T extends Record<string, any>>(
+export function getChangedFields<T extends Record<string, unknown>>(
   original: T | undefined,
   updated: T
 ): Partial<T> {
