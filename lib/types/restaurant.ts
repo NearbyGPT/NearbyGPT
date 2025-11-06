@@ -41,6 +41,7 @@ export type PaymentMethod =
   | "contactless/wallet"
   | "crypto";
 
+// Frontend representation for the form
 export type Restaurant = {
   id?: string;
   name: string;
@@ -73,3 +74,46 @@ export type Restaurant = {
 };
 
 export type RestaurantFormData = Omit<Restaurant, "id">;
+
+// Backend API representation
+export type BackendRestaurant = {
+  id?: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  city: string;
+  state: string;
+  address: string;
+  phone?: string | null;
+  email?: string | null;
+  website?: string;
+  tiktok?: string;
+  facebook?: string;
+  instagram?: string;
+  whatsapp?: string;
+  neighborhood?: string | null;
+  dining_intention?: string;
+  parking_availability?: string;
+  smoking_section?: string | null;
+  outdoor_amenities?: string[];
+  description?: string;
+  service_style?: string;
+  cuisine_types?: string[];
+  specialties?: string[];
+  delivery_timing_insights?: string;
+  health_positioning?: string;
+  opening_hours_text?: string | null;
+  meal_periods?: string[];
+  price_range?: string;
+  payment_methods?: string[];
+  reviews_influencers?: string;
+  rating?: number | null;
+  is_active?: boolean;
+  created_at?: string;
+  updated_at?: string;
+  zip_code?: string | null;
+  ambiance?: string | null;
+  accepts_reservations?: boolean;
+  delivery_available?: boolean;
+  outdoor_seating?: boolean;
+};
