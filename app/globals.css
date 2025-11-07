@@ -184,3 +184,11 @@ body {
     display: inline-block;
   }
 }
+
+.mapboxgl-ctrl-logo {
+  opacity: 0.4 !important;
+}
+
+.mapboxgl-ctrl-attrib {
+  opacity: 0.4 !important;
+}
