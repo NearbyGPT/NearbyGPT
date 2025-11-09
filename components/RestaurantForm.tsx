@@ -431,6 +431,9 @@ export function RestaurantForm({
                 <SelectItem value="On site parking lot">
                   On site parking lot
                 </SelectItem>
+                <SelectItem value="On site parking with fees">
+                  On site parking with fees
+                </SelectItem>
                 <SelectItem value="Valet service available">
                   Valet service available
                 </SelectItem>
