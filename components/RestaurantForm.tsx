@@ -34,6 +34,13 @@ import {
   PriceRange,
   PaymentMethod,
 } from "@/lib/types/restaurant";
+import {
+  restaurantSchema,
+  restaurantUpdateSchema,
+} from "@/lib/validation/restaurantSchema";
+import { z } from "zod";
+import { AlertCircle } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 type RestaurantFormProps = {
   initialData?: Restaurant;
@@ -69,6 +76,12 @@ export function RestaurantForm({
 }: RestaurantFormProps) {
   // Track original data to detect changes
   const originalDataRef = useRef<RestaurantFormData | null>(null);
+
+  // State for validation errors
+  const [validationErrors, setValidationErrors] = useState<
+    Record<string, string>
+  >({});
+  const [generalError, setGeneralError] = useState<string>("");
 
   const [formData, setFormData] = useState<RestaurantFormData>({
     name: initialData?.name || "",
@@ -137,20 +150,66 @@ export function RestaurantForm({
     setFormData(newFormData);
     // Store a snapshot of the original data for comparison on submit
     originalDataRef.current = { ...newFormData };
+    // Clear validation errors when data changes
+    setValidationErrors({});
+    setGeneralError("");
   }, [initialData]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // If this is an edit (we have original data), only send changed fields
-    if (initialData && originalDataRef.current) {
-      const changedFields = getChangedFields(originalDataRef.current, formData);
-      console.log("Sending only changed fields:", Object.keys(changedFields));
-      await onSubmit(changedFields as RestaurantFormData);
-    } else {
-      // For new restaurants, send all data
-      console.log("Creating new restaurant with all fields");
-      await onSubmit(formData);
+    // Clear previous errors
+    setValidationErrors({});
+    setGeneralError("");
+
+    try {
+      // Determine which data to validate
+      let dataToValidate: RestaurantFormData | Partial<RestaurantFormData>;
+      let dataToSubmit: RestaurantFormData | Partial<RestaurantFormData>;
+
+      if (initialData && originalDataRef.current) {
+        // For updates, get changed fields
+        const changedFields = getChangedFields(originalDataRef.current, formData);
+        dataToValidate = formData; // Validate the full form for context
+        dataToSubmit = changedFields;
+        console.log("Sending only changed fields:", Object.keys(changedFields));
+
+        // Use partial schema for updates
+        restaurantUpdateSchema.parse(changedFields);
+      } else {
+        // For new restaurants, validate all required fields
+        dataToValidate = formData;
+        dataToSubmit = formData;
+        console.log("Creating new restaurant with all fields");
+
+        // Use full schema for creation
+        restaurantSchema.parse(formData);
+      }
+
+      // If validation passes, submit the data
+      await onSubmit(dataToSubmit);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        // Convert Zod errors to a more usable format
+        const fieldErrors: Record<string, string> = {};
+        error.issues.forEach((err) => {
+          const path = err.path.join(".");
+          fieldErrors[path] = err.message;
+        });
+        setValidationErrors(fieldErrors);
+
+        // Set a general error message
+        setGeneralError(
+          "Please fix the validation errors below before submitting."
+        );
+
+        // Scroll to the top to show the error alert
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      } else {
+        // Handle unexpected errors
+        setGeneralError("An unexpected error occurred. Please try again.");
+        console.error("Validation error:", error);
+      }
     }
   };
 
@@ -170,8 +229,28 @@ export function RestaurantForm({
     });
   };
 
+  // Helper component to display field errors
+  const FieldError = ({ fieldName }: { fieldName: string }) => {
+    const error = validationErrors[fieldName];
+    if (!error) return null;
+
+    return (
+      <p className="text-sm text-destructive flex items-center gap-1 mt-1">
+        <AlertCircle className="h-3 w-3" />
+        {error}
+      </p>
+    );
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {/* General error alert */}
+      {generalError && (
+        <Alert variant="destructive">
+          <AlertCircle className="h-4 w-4" />
+          <AlertDescription>{generalError}</AlertDescription>
+        </Alert>
+      )}
       {/* Basic Information */}
       <Card>
         <CardHeader>
@@ -191,7 +270,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, name: e.target.value })
               }
               placeholder="Enter restaurant name"
+              className={validationErrors.name ? "border-destructive" : ""}
             />
+            <FieldError fieldName="name" />
           </div>
 
           <div className="space-y-2">
@@ -206,7 +287,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, latitude: parseFloat(e.target.value) })
               }
               placeholder="e.g., 33.8938"
+              className={validationErrors.latitude ? "border-destructive" : ""}
             />
+            <FieldError fieldName="latitude" />
           </div>
 
           <div className="space-y-2">
@@ -221,7 +304,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, longitude: parseFloat(e.target.value) })
               }
               placeholder="e.g., 35.5018"
+              className={validationErrors.longitude ? "border-destructive" : ""}
             />
+            <FieldError fieldName="longitude" />
           </div>
 
           <div className="space-y-2">
@@ -234,7 +319,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, city: e.target.value })
               }
               placeholder="Enter city"
+              className={validationErrors.city ? "border-destructive" : ""}
             />
+            <FieldError fieldName="city" />
           </div>
 
           <div className="space-y-2">
@@ -247,7 +334,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, state: e.target.value })
               }
               placeholder="Enter state or governorate"
+              className={validationErrors.state ? "border-destructive" : ""}
             />
+            <FieldError fieldName="state" />
           </div>
 
           <div className="space-y-2 md:col-span-2">
@@ -260,7 +349,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, address: e.target.value })
               }
               placeholder="Enter street address"
+              className={validationErrors.address ? "border-destructive" : ""}
             />
+            <FieldError fieldName="address" />
           </div>
 
           <div className="space-y-2">
@@ -273,7 +364,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, location_neighborhood: e.target.value })
               }
               placeholder="e.g., Downtown, West End"
+              className={validationErrors.location_neighborhood ? "border-destructive" : ""}
             />
+            <FieldError fieldName="location_neighborhood" />
           </div>
 
           <div className="space-y-2">
@@ -286,7 +379,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, phone_number: e.target.value })
               }
               placeholder="+1 234 567 8900"
+              className={validationErrors.phone_number ? "border-destructive" : ""}
             />
+            <FieldError fieldName="phone_number" />
           </div>
         </CardContent>
       </Card>
@@ -308,7 +403,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, website: e.target.value })
               }
               placeholder="https://example.com"
+              className={validationErrors.website ? "border-destructive" : ""}
             />
+            <FieldError fieldName="website" />
           </div>
 
           <div className="space-y-2">
@@ -320,7 +417,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, instagram: e.target.value })
               }
               placeholder="@restaurant"
+              className={validationErrors.instagram ? "border-destructive" : ""}
             />
+            <FieldError fieldName="instagram" />
           </div>
 
           <div className="space-y-2">
@@ -332,7 +431,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, facebook: e.target.value })
               }
               placeholder="facebook.com/restaurant"
+              className={validationErrors.facebook ? "border-destructive" : ""}
             />
+            <FieldError fieldName="facebook" />
           </div>
 
           <div className="space-y-2">
@@ -344,7 +445,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, tiktok: e.target.value })
               }
               placeholder="@restaurant"
+              className={validationErrors.tiktok ? "border-destructive" : ""}
             />
+            <FieldError fieldName="tiktok" />
           </div>
 
           <div className="space-y-2">
@@ -357,7 +460,9 @@ export function RestaurantForm({
                 setFormData({ ...formData, whatsapp: e.target.value })
               }
               placeholder="+1 234 567 8900"
+              className={validationErrors.whatsapp ? "border-destructive" : ""}
             />
+            <FieldError fieldName="whatsapp" />
           </div>
         </CardContent>
       </Card>
@@ -490,6 +595,7 @@ export function RestaurantForm({
                 </div>
               ))}
             </div>
+            <FieldError fieldName="outdoor_family_amenities" />
           </div>
         </CardContent>
       </Card>
@@ -516,7 +622,9 @@ export function RestaurantForm({
               }
               placeholder="Italian, Mediterranean, Seafood"
               rows={2}
+              className={validationErrors.cuisine_mix ? "border-destructive" : ""}
             />
+            <FieldError fieldName="cuisine_mix" />
           </div>
 
           <div className="space-y-2">
@@ -530,7 +638,9 @@ export function RestaurantForm({
               }
               placeholder="Describe the restaurant's atmosphere..."
               rows={3}
+              className={validationErrors.description ? "border-destructive" : ""}
             />
+            <FieldError fieldName="description" />
           </div>
 
           <div className="space-y-2">
@@ -567,7 +677,9 @@ export function RestaurantForm({
               }
               placeholder="Typical delivery times and availability..."
               rows={3}
+              className={validationErrors.delivery_timing_insights ? "border-destructive" : ""}
             />
+            <FieldError fieldName="delivery_timing_insights" />
           </div>
         </CardContent>
       </Card>
@@ -594,7 +706,9 @@ export function RestaurantForm({
               }
               placeholder="Weekdays 9am-11pm, Weekends 9am-1am"
               rows={2}
+              className={validationErrors.opening_hours ? "border-destructive" : ""}
             />
+            <FieldError fieldName="opening_hours" />
           </div>
 
           <div className="space-y-2">
@@ -622,6 +736,7 @@ export function RestaurantForm({
                 </div>
               ))}
             </div>
+            <FieldError fieldName="meal_periods_served" />
           </div>
 
           <div className="space-y-2">
@@ -669,6 +784,7 @@ export function RestaurantForm({
                 </div>
               ))}
             </div>
+            <FieldError fieldName="accepted_payment_methods" />
           </div>
         </CardContent>
       </Card>
@@ -693,7 +809,9 @@ export function RestaurantForm({
               }
               placeholder="Notable reviews, ratings, and influencer mentions..."
               rows={4}
+              className={validationErrors.reviews_influencers ? "border-destructive" : ""}
             />
+            <FieldError fieldName="reviews_influencers" />
           </div>
         </CardContent>
       </Card>
