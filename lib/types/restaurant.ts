@@ -4,6 +4,7 @@ export type ParkingAvailability =
   | "No"
   | "Street Parking nearby"
   | "On site parking lot"
+  | "On site parking with fees"
   | "Valet service available";
 
 export type SmokingSectionAvailability =
