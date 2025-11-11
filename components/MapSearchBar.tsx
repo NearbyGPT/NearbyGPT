@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useRef } from 'react'
 import { Search, X, ArrowUpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
+import useGeneralStore from '@/store/generalStore'
 
 interface MapSearchBarProps {
   value: string
@@ -34,6 +35,8 @@ export default function MapSearchBar({
   const lastMessage = hasMessages ? messages[messages.length - 1] : null
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
+  const loading = useGeneralStore((s) => s.loading)
+
   useEffect(() => {
     if (!showMessages) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -45,12 +48,13 @@ export default function MapSearchBar({
     if (!trimmedValue) return
 
     onSubmit?.(trimmedValue)
+    // Clear input right after sending
+    onChange('')
   }
 
   const handleFocus = () => {
     onExpand?.()
   }
-
   return (
     <div
       className={cn(
@@ -96,6 +100,23 @@ export default function MapSearchBar({
                 </div>
               </div>
             ))}
+
+            {/* Typing indicator for AI loading */}
+            {loading && (
+              <div className="flex justify-start">
+                <div className="flex items-center gap-1 bg-gray-600 rounded-full px-3 py-2">
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '-0.3s' }}
+                  />
+                  <span
+                    className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                    style={{ animationDelay: '-0.15s' }}
+                  />
+                  <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+                </div>
+              </div>
+            )}
             <div ref={messagesEndRef} />
           </div>
         )}

@@ -5,21 +5,15 @@ import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import {
-  fetchPOIsFromBackend,
-  filterPOIsByQuery,
-  filterPOIsByLocation,
-} from '@/lib/backendPoiApi'
+import { fetchPOIsFromBackend, filterPOIsByQuery, filterPOIsByLocation } from '@/lib/backendPoiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
 const getEmojiImageId = (emoji: string) =>
-  `emoji-${
-    Array.from(emoji)
-      .map((char) => char.codePointAt(0)?.toString(16))
-      .filter(Boolean)
-      .join('-')
-  }`
+  `emoji-${Array.from(emoji)
+    .map((char) => char.codePointAt(0)?.toString(16))
+    .filter(Boolean)
+    .join('-')}`
 
 const createEmojiImage = (emoji: string) => {
   const size = 128
@@ -84,6 +78,8 @@ export default function Map() {
   const addChatMessage = useGeneralStore((s) => s.addChatMessage)
   const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
 
+  const setLoading = useGeneralStore((s) => s.setLoading)
+
   const [allPOIs, setAllPOIs] = useState<POI[]>([])
   const [pois, setPois] = useState<POI[]>([])
   const hasFitBoundsRef = useRef(false)
@@ -128,8 +124,10 @@ export default function Map() {
   )
 
   const handleSearchSubmit = useCallback(
-    (query: string) => {
+    async (query: string) => {
       if (!query) return
+
+      setLoading(true)
 
       const baseMessageId = createMessageId()
 
@@ -139,19 +137,78 @@ export default function Map() {
         text: query,
       })
 
-      filterPOIs(query)
+      const map = mapRef.current
+      const center = map?.getCenter()
+      const bounds = map?.getBounds()
 
-      addChatMessage({
-        id: `${baseMessageId}-assistant`,
-        role: 'assistant',
-        text: `I am filtering ${query} ... done.`,
-      })
+      const viewport =
+        center && bounds
+          ? {
+              center: { lat: center.lat, lng: center.lng },
+              zoom: map?.getZoom() ?? 13,
+              bounds: {
+                north: bounds.getNorth(),
+                south: bounds.getSouth(),
+                east: bounds.getEast(),
+                west: bounds.getWest(),
+              },
+            }
+          : null
+
+      try {
+        const payload = {
+          message: query,
+          viewport,
+          session_id: 'user-123',
+          active_filters: {},
+        }
+
+        console.log('Sending payload to NearbyGPT:', payload)
+
+        const response = await fetch('https://api.nearbygpt.app/api/chat/', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(payload),
+        })
+
+        const text = await response.text()
+        console.log('Raw API response:', text)
+
+        if (!response.ok) {
+          setLoading(false)
+          throw new Error(`API ${response.status}: ${text}`)
+        }
+
+        const data = JSON.parse(text)
+
+        addChatMessage({
+          id: `${baseMessageId}-assistant`,
+          role: 'assistant',
+          text: data?.message ?? 'Got your request!',
+        })
+
+        if (data?.pois && Array.isArray(data.pois)) {
+          setPois(data.pois)
+        }
+        setLoading(false)
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } catch (error: any) {
+        console.error('Error calling NearbyGPT API:', error)
+        setLoading(false)
+        addChatMessage({
+          id: `${baseMessageId}-assistant`,
+          role: 'assistant',
+          text: `Sorry, I couldn’t process your request: ${error.message}`,
+        })
+      }
 
       skipSearchSyncRef.current = true
       setSearchQuery('')
       setIsChatExpanded(true)
     },
-    [addChatMessage, filterPOIs, setSearchQuery]
+    [addChatMessage, setSearchQuery, setIsChatExpanded, setPois]
   )
 
   // Convert POIs to GeoJSON
