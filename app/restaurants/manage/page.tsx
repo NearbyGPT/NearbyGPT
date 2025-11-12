@@ -91,6 +91,9 @@ export default function ManageRestaurantPage() {
         setSelectedRestaurantId(null);
         setSelectedRestaurant(null);
         setMode("create");
+
+        // Scroll to top of the page
+        window.scrollTo({ top: 0, behavior: "smooth" });
       }
     } catch (error) {
       console.error("Failed to save restaurant:", error);
