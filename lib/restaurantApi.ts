@@ -208,3 +208,18 @@ export async function updateRestaurant(
   // Transform backend response to frontend format
   return transformBackendToFrontend(backendRestaurant);
 }
+
+/**
+ * Delete a restaurant
+ */
+export async function deleteRestaurant(restaurantId: string): Promise<void> {
+  const apiBaseUrl = getApiBaseUrl();
+
+  const response = await fetch(`${apiBaseUrl}/restaurants/${restaurantId}`, {
+    method: "DELETE",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to delete restaurant: ${response.statusText}`);
+  }
+}

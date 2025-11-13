@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { Trash2 } from "lucide-react";
 import { RestaurantForm } from "@/components/RestaurantForm";
 import {
   Card,
@@ -22,6 +23,7 @@ import {
   getRestaurants,
   createRestaurant,
   updateRestaurant,
+  deleteRestaurant,
 } from "@/lib/restaurantApi";
 import { Restaurant, RestaurantFormData } from "@/lib/types/restaurant";
 import { toast } from "sonner";
@@ -113,6 +115,43 @@ export default function ManageRestaurantPage() {
     setMode("create");
   };
 
+  const handleDelete = async () => {
+    if (!selectedRestaurantId || !selectedRestaurant) {
+      return;
+    }
+
+    // Show confirmation dialog
+    const confirmed = window.confirm(
+      `Are you sure you want to delete "${selectedRestaurant.name}"? This action cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      await deleteRestaurant(selectedRestaurantId);
+      toast.success("Restaurant deleted successfully!");
+
+      // Remove the deleted restaurant from the list
+      setRestaurants((prev) => prev.filter((r) => r.id !== selectedRestaurantId));
+
+      // Reset to create mode
+      setSelectedRestaurantId(null);
+      setSelectedRestaurant(null);
+      setMode("create");
+
+      // Scroll to top of the page
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (error) {
+      console.error("Failed to delete restaurant:", error);
+      toast.error("Failed to delete restaurant");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4 max-w-5xl">
       <div className="mb-8">
@@ -159,7 +198,7 @@ export default function ManageRestaurantPage() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex items-end">
+            <div className="flex items-end gap-2">
               <Button
                 type="button"
                 variant="outline"
@@ -168,6 +207,17 @@ export default function ManageRestaurantPage() {
               >
                 Create New Restaurant
               </Button>
+              {mode === "edit" && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={handleDelete}
+                  disabled={isLoading}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </Button>
+              )}
             </div>
           </div>
 
