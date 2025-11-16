@@ -161,6 +161,10 @@ export default function Map() {
           viewport,
           session_id: 'user-123',
           active_filters: {},
+          ...(userLocation && {
+            latitude: userLocation.latitude,
+            longitude: userLocation.longitude,
+          }),
         }
 
         console.log('Sending payload to NearbyGPT:', payload)

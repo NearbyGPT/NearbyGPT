@@ -27,6 +27,7 @@ export default function FloatingChat() {
 
   const flyToLocation = useGeneralStore((s) => s.flyToLocation)
   const setUserLocation = useGeneralStore((s) => s.setUserLocation)
+  const userLocation = useGeneralStore((s) => s.userLocation)
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -104,11 +105,15 @@ export default function FloatingChat() {
     try {
       const url = `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/chat`
 
-      const body: { message: string; resturantId?: string; session_id?: string } = {
+      const body: { message: string; resturantId?: string; session_id?: string; latitude?: number; longitude?: number } = {
         message: newMessage.text,
       }
       if (resturantId) body.resturantId = resturantId
       if (sessionId) body.session_id = sessionId
+      if (userLocation) {
+        body.latitude = userLocation.latitude
+        body.longitude = userLocation.longitude
+      }
 
       const res = await fetch(url, {
         method: 'POST',
