@@ -159,14 +159,13 @@ export default function Map() {
         const payload = {
           message: query,
           viewport,
-          session_id: 'user-123',
+          // session_id: 'user-123',
           active_filters: {},
           ...(userLocation && {
             latitude: userLocation.latitude,
             longitude: userLocation.longitude,
           }),
         }
-
         console.log('Sending payload to NearbyGPT:', payload)
 
         const response = await fetch('https://api.nearbygpt.app/api/chat/', {
@@ -212,7 +211,7 @@ export default function Map() {
       setSearchQuery('')
       setIsChatExpanded(true)
     },
-    [addChatMessage, setSearchQuery, setIsChatExpanded, setPois]
+    [setLoading, addChatMessage, setSearchQuery, userLocation]
   )
 
   // Convert POIs to GeoJSON
@@ -265,7 +264,7 @@ export default function Map() {
         }
       )
     }
-  }, [setUserLocation])
+  }, [setUserLocation, userLocation])
 
   // Filter POIs when search query changes (with debouncing)
   useEffect(() => {
@@ -308,10 +307,19 @@ export default function Map() {
     })
     map.addControl(geolocateControl, 'top-right')
 
-    const handleGeolocate = (e: GeolocationPosition) => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const handleGeolocate = (e: any) => {
+      const ctrl = e?.target
+      const pos = ctrl?._lastKnownPosition
+
+      if (!pos?.coords) {
+        console.warn('Geolocate missing coords:', e)
+        return
+      }
+      console.log(e.target._lastKnownPosition?.coords)
       setUserLocation({
-        latitude: e.coords.latitude,
-        longitude: e.coords.longitude,
+        latitude: pos.coords.latitude,
+        longitude: pos.coords.longitude,
       })
     }
 
@@ -336,6 +344,16 @@ export default function Map() {
           duration: 2000,
         })
       }
+    })
+
+    map.on('moveend', () => {
+      const center = map.getCenter()
+      const lat = center.lat.toFixed(6)
+      const lng = center.lng.toFixed(6)
+
+      const newQuery = `?lat=${lat}&lng=${lng}`
+
+      window.history.replaceState(null, '', newQuery)
     })
 
     const collapseEvents: Array<'click' | 'dragstart' | 'rotatestart' | 'pitchstart' | 'touchstart'> = [
