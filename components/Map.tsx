@@ -308,7 +308,7 @@ export default function Map() {
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
+      style: 'mapbox://styles/mapbox/basic-v9',
       center: [29.9187, 31.2001],
       zoom: 15,
       attributionControl: false,
