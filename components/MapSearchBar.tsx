@@ -5,6 +5,9 @@ import { Search, X, ArrowUpCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
 import useGeneralStore from '@/store/generalStore'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 interface MapSearchBarProps {
   value: string
@@ -36,6 +39,16 @@ export default function MapSearchBar({
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   const loading = useGeneralStore((s) => s.loading)
+  const messagesFromStorage = useGeneralStore((state) => state.chatMessages)
+  const addChatMessage = useGeneralStore((state) => state.addChatMessage)
+
+  // load persist chat
+  useEffect(() => {
+    if (!messages.length && messagesFromStorage.length) {
+      // If component has no messages prop but store has persisted messages
+      messagesFromStorage.forEach((msg) => addChatMessage(msg))
+    }
+  }, [])
 
   useEffect(() => {
     if (!showMessages) return
@@ -55,6 +68,7 @@ export default function MapSearchBar({
   const handleFocus = () => {
     onExpand?.()
   }
+
   return (
     <div
       className={cn(
@@ -84,19 +98,20 @@ export default function MapSearchBar({
             )}
           </button>
         )}
+
         {showMessages && (
           <div className="flex-1 overflow-y-auto space-y-3 pr-1">
             {messages.map((message) => (
               <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
                 <div
                   className={cn(
-                    'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm',
+                    'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm prose prose-sm',
                     message.role === 'user'
                       ? 'bg-[var(--color-primary)] text-white'
                       : 'bg-[var(--color-background-light)] text-[var(--color-dark)]'
                   )}
                 >
-                  {message.text}
+                  <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{message.text}</ReactMarkdown>
                 </div>
               </div>
             ))}
@@ -117,9 +132,11 @@ export default function MapSearchBar({
                 </div>
               </div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
         )}
+
         <form
           onSubmit={handleSubmit}
           className={cn('flex items-center gap-3', showMessages ? 'mt-4' : hasMessages ? 'mt-2' : undefined)}
@@ -142,6 +159,7 @@ export default function MapSearchBar({
             <span className="hidden sm:inline">Send</span>
           </button>
         </form>
+
         {chatLabel && (
           <div
             className={cn(

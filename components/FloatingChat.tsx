@@ -7,6 +7,9 @@ import { Input } from './ui/input'
 import { useParams } from 'next/navigation'
 import useGeneralStore from '@/store/generalStore'
 import { toast } from 'sonner'
+import ReactMarkdown from 'react-markdown'
+import remarkGfm from 'remark-gfm'
+import remarkBreaks from 'remark-breaks'
 
 interface Message {
   id: string
@@ -28,7 +31,6 @@ export default function FloatingChat() {
   const flyToLocation = useGeneralStore((s) => s.flyToLocation)
   const setUserLocation = useGeneralStore((s) => s.setUserLocation)
   const userLocation = useGeneralStore((s) => s.userLocation)
-  const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -37,8 +39,7 @@ export default function FloatingChat() {
 
   // load persisted chat
   useEffect(() => {
-    const businessId = activeChatPOI?.id || resturantId
-    const key = businessId ? `chat-business-${businessId}` : 'chat-floating'
+    const key = resturantId ? `chat-resturant-${resturantId}` : 'chat-floating'
     try {
       const saved = localStorage.getItem(key)
       if (saved) {
@@ -48,26 +49,21 @@ export default function FloatingChat() {
         }
         if (parsed.messages) setMessages(parsed.messages)
         if (parsed.sessionId) setSessionId(parsed.sessionId)
-      } else {
-        // Clear chat state when switching to a business with no saved history
-        setMessages([])
-        setSessionId(null)
       }
     } catch {
       /* ignore */
     }
-  }, [activeChatPOI?.id, resturantId])
+  }, [resturantId])
 
   // persist chat
   useEffect(() => {
-    const businessId = activeChatPOI?.id || resturantId
-    const key = businessId ? `chat-business-${businessId}` : 'chat-floating'
+    const key = resturantId ? `chat-resturant-${resturantId}` : 'chat-floating'
     try {
       localStorage.setItem(key, JSON.stringify({ messages, sessionId }))
     } catch {
       /* ignore */
     }
-  }, [messages, sessionId, activeChatPOI?.id, resturantId])
+  }, [messages, sessionId, resturantId])
 
   // scroll to show the user's last message and the assistant reply below it
   useEffect(() => {
@@ -114,28 +110,19 @@ export default function FloatingChat() {
 
       const body: {
         message: string
-        business_id?: string
+        resturantId?: string
         session_id?: string
         latitude?: number
         longitude?: number
-        radius_meters?: number
-        user_id?: string
       } = {
         message: newMessage.text,
       }
-
-      // Use activeChatPOI id as business_id, fallback to resturantId from URL params
-      const businessId = activeChatPOI?.id || resturantId
-      if (businessId) body.business_id = businessId
-
+      if (resturantId) body.resturantId = resturantId
       if (sessionId) body.session_id = sessionId
       if (userLocation) {
         body.latitude = userLocation.latitude
         body.longitude = userLocation.longitude
-        body.radius_meters = 5000 // Default radius in meters
       }
-      // Add user_id if needed (placeholder for now)
-      body.user_id = 'user-default'
 
       const res = await fetch(url, {
         method: 'POST',
@@ -242,7 +229,9 @@ export default function FloatingChat() {
                 }`}
               >
                 {m.role === 'assistant' ? (
-                  <div className="prose prose-sm max-w-none text-[var(--color-dark)]">{m.text}</div>
+                  <div className="prose prose-sm max-w-none text-[var(--color-dark)]">
+                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{m.text}</ReactMarkdown>
+                  </div>
                 ) : (
                   <div>{m.text}</div>
                 )}

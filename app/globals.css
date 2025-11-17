@@ -192,3 +192,16 @@ body {
 .mapboxgl-ctrl-attrib {
   opacity: 0.4 !important;
 }
+
+.prose p {
+  margin: 0.25rem 0;
+}
+
+.prose ul {
+  margin: 0.25rem 0;
+  padding-left: 1.2rem;
+}
+
+.prose strong {
+  font-weight: 600;
+}
