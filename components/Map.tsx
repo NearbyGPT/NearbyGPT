@@ -5,14 +5,9 @@ import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import {
-  fetchPOIsFromBackend,
-  filterPOIsByQuery,
-  filterPOIsByLocation,
-  transformChatBusinessToPOI,
-  type ChatBusinessFound,
-} from '@/lib/backendPoiApi'
+import { fetchPOIsFromBackend, filterPOIsByQuery, filterPOIsByLocation } from '@/lib/backendPoiApi'
 import { useAuth } from '@clerk/nextjs'
+import { BackendBusiness } from '@/lib/types/restaurant'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -130,7 +125,6 @@ export default function Map() {
     },
     [allPOIs, userLocation]
   )
-
   const handleSearchSubmit = useCallback(
     async (query: string) => {
       if (!query) return
@@ -163,7 +157,6 @@ export default function Map() {
               },
             }
           : null
-
       try {
         const payload = {
           message: query,
@@ -173,8 +166,10 @@ export default function Map() {
             latitude: userLocation.latitude,
             longitude: userLocation.longitude,
           }),
+          ...(activeChatPOI && {
+            business_id: activeChatPOI.id,
+          }),
         }
-        console.log('Sending payload to NearbyGPT:', payload)
 
         const response = await fetch('https://api.nearbygpt.app/api/chat/', {
           method: 'POST',
@@ -186,7 +181,6 @@ export default function Map() {
         })
 
         const text = await response.text()
-        console.log('Raw API response:', text)
 
         if (!response.ok) {
           setLoading(false)
@@ -201,14 +195,35 @@ export default function Map() {
           text: data?.message ?? 'Got your request!',
         })
 
-        // Update map with businesses_found from chat response
+        // If backend returned businesses_found, update POIs on map
         if (data?.businesses_found && Array.isArray(data.businesses_found)) {
-          const transformedPOIs = data.businesses_found
-            .map((business: ChatBusinessFound) => transformChatBusinessToPOI(business))
-            .filter((poi: POI) => Number.isFinite(poi.coordinates[0]) && Number.isFinite(poi.coordinates[1]))
-          setPois(transformedPOIs)
-          console.log(`Updated map with ${transformedPOIs.length} businesses from chat response`)
+          const filtered: POI[] = data.businesses_found.map((b: BackendBusiness) => ({
+            id: b.id,
+            name: b.name,
+            icon: '🍽️',
+            type: 'restaurant',
+            coordinates: [b.longitude, b.latitude],
+          }))
+
+          setPois(filtered)
+
+          // After POIs update, zoom map to include these
+          requestAnimationFrame(() => {
+            const map = mapRef.current
+            if (!map || filtered.length === 0) return
+
+            const bounds = new mapboxgl.LngLatBounds()
+
+            filtered.forEach((poi) => bounds.extend(poi.coordinates))
+
+            map.fitBounds(bounds, {
+              padding: 80,
+              duration: 1200,
+              maxZoom: 15,
+            })
+          })
         }
+
         setLoading(false)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } catch (error: any) {
@@ -225,7 +240,7 @@ export default function Map() {
       setSearchQuery('')
       setIsChatExpanded(true)
     },
-    [setLoading, addChatMessage, setSearchQuery, userLocation]
+    [setLoading, addChatMessage, setSearchQuery, userLocation, activeChatPOI]
   )
 
   // Convert POIs to GeoJSON
@@ -252,33 +267,33 @@ export default function Map() {
   }, [userLocation])
 
   // Request user location on component mount
-  useEffect(() => {
-    if ('geolocation' in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords
-          setUserLocation({ latitude, longitude })
+  // useEffect(() => {
+  //   if ('geolocation' in navigator) {
+  //     navigator.geolocation.getCurrentPosition(
+  //       (position) => {
+  //         const { latitude, longitude } = position.coords
+  //         setUserLocation({ latitude, longitude })
 
-          // Fly to user's location if map is already loaded
-          if (mapRef.current?.isStyleLoaded()) {
-            mapRef.current.flyTo({
-              center: [longitude, latitude],
-              zoom: 15,
-              duration: 2000,
-            })
-          }
-        },
-        (error) => {
-          console.warn('Error getting user location:', error.message)
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 10000,
-          maximumAge: 0,
-        }
-      )
-    }
-  }, [setUserLocation, userLocation])
+  //         // Fly to user's location if map is already loaded
+  //         if (mapRef.current?.isStyleLoaded()) {
+  //           mapRef.current.flyTo({
+  //             center: [longitude, latitude],
+  //             zoom: 15,
+  //             duration: 2000,
+  //           })
+  //         }
+  //       },
+  //       (error) => {
+  //         console.warn('Error getting user location:', error.message)
+  //       },
+  //       {
+  //         enableHighAccuracy: true,
+  //         timeout: 10000,
+  //         maximumAge: 0,
+  //       }
+  //     )
+  //   }
+  // }, [setUserLocation, userLocation])
 
   // Filter POIs when search query changes (with debouncing)
   useEffect(() => {
@@ -330,7 +345,6 @@ export default function Map() {
         console.warn('Geolocate missing coords:', e)
         return
       }
-      console.log(e.target._lastKnownPosition?.coords)
       setUserLocation({
         latitude: pos.coords.latitude,
         longitude: pos.coords.longitude,

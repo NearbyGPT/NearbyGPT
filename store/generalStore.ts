@@ -47,7 +47,10 @@ const useGeneralStore = create<GeneralState>()(
     }),
     {
       name: 'general-store',
-      partialize: () => ({}),
+      partialize: (state) => ({
+        chatMessages: state.chatMessages,
+        activeChatPOI: state.activeChatPOI,
+      }),
     }
   )
 )
