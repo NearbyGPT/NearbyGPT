@@ -202,25 +202,19 @@ export default function Map() {
             name: b.name,
             icon: '🍽️',
             type: 'restaurant',
-            coordinates: [b.longitude, b.latitude],
+            coordinates: [b.location.longitude, b.location.latitude],
           }))
 
           setPois(filtered)
 
-          // After POIs update, zoom map to include these
+          // Zoom map to include these POIs
           requestAnimationFrame(() => {
             const map = mapRef.current
             if (!map || filtered.length === 0) return
 
             const bounds = new mapboxgl.LngLatBounds()
-
             filtered.forEach((poi) => bounds.extend(poi.coordinates))
-
-            map.fitBounds(bounds, {
-              padding: 80,
-              duration: 1200,
-              maxZoom: 15,
-            })
+            map.fitBounds(bounds, { padding: 80, duration: 1200, maxZoom: 15 })
           })
         }
 
@@ -267,33 +261,33 @@ export default function Map() {
   }, [userLocation])
 
   // Request user location on component mount
-  // useEffect(() => {
-  //   if ('geolocation' in navigator) {
-  //     navigator.geolocation.getCurrentPosition(
-  //       (position) => {
-  //         const { latitude, longitude } = position.coords
-  //         setUserLocation({ latitude, longitude })
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords
+          setUserLocation({ latitude, longitude })
 
-  //         // Fly to user's location if map is already loaded
-  //         if (mapRef.current?.isStyleLoaded()) {
-  //           mapRef.current.flyTo({
-  //             center: [longitude, latitude],
-  //             zoom: 15,
-  //             duration: 2000,
-  //           })
-  //         }
-  //       },
-  //       (error) => {
-  //         console.warn('Error getting user location:', error.message)
-  //       },
-  //       {
-  //         enableHighAccuracy: true,
-  //         timeout: 10000,
-  //         maximumAge: 0,
-  //       }
-  //     )
-  //   }
-  // }, [setUserLocation, userLocation])
+          // Fly to user's location if map is already loaded
+          if (mapRef.current?.isStyleLoaded()) {
+            mapRef.current.flyTo({
+              center: [longitude, latitude],
+              zoom: 15,
+              duration: 2000,
+            })
+          }
+        },
+        (error) => {
+          console.warn('Error getting user location:', error.message)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000,
+          maximumAge: 0,
+        }
+      )
+    }
+  }, [setUserLocation, userLocation])
 
   // Filter POIs when search query changes (with debouncing)
   useEffect(() => {

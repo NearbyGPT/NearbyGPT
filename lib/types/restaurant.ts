@@ -101,9 +101,30 @@ export type BackendRestaurant = {
   outdoor_seating?: boolean
 }
 
-export type BackendBusiness = {
-  id: string
-  name: string
+export interface BackendBusinessLocation {
   latitude: number
   longitude: number
+  address: string
+  city: string
+}
+
+export interface BackendBusiness {
+  id: string
+  name: string
+  type: string
+  location: BackendBusinessLocation
+  rating: number | null
+  quick_info: string
+}
+
+export interface FiltersExtracted {
+  cuisine_types: string[]
+}
+
+export interface BackendResponse {
+  message: string
+  filters_extracted: FiltersExtracted
+  businesses_found: BackendBusiness[]
+  search_performed: boolean
+  timestamp: string
 }
