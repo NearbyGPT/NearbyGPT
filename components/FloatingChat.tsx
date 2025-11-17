@@ -48,6 +48,10 @@ export default function FloatingChat() {
         }
         if (parsed.messages) setMessages(parsed.messages)
         if (parsed.sessionId) setSessionId(parsed.sessionId)
+      } else {
+        // Clear chat state when switching to a business with no saved history
+        setMessages([])
+        setSessionId(null)
       }
     } catch {
       /* ignore */
