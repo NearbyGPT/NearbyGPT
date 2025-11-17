@@ -5,7 +5,13 @@ import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
 import useGeneralStore from '@/store/generalStore'
-import { fetchPOIsFromBackend, filterPOIsByQuery, filterPOIsByLocation } from '@/lib/backendPoiApi'
+import {
+  fetchPOIsFromBackend,
+  filterPOIsByQuery,
+  filterPOIsByLocation,
+  transformChatBusinessToPOI,
+  type ChatBusinessFound,
+} from '@/lib/backendPoiApi'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -192,8 +198,13 @@ export default function Map() {
           text: data?.message ?? 'Got your request!',
         })
 
-        if (data?.pois && Array.isArray(data.pois)) {
-          setPois(data.pois)
+        // Update map with businesses_found from chat response
+        if (data?.businesses_found && Array.isArray(data.businesses_found)) {
+          const transformedPOIs = data.businesses_found
+            .map((business: ChatBusinessFound) => transformChatBusinessToPOI(business))
+            .filter((poi: POI) => Number.isFinite(poi.coordinates[0]) && Number.isFinite(poi.coordinates[1]))
+          setPois(transformedPOIs)
+          console.log(`Updated map with ${transformedPOIs.length} businesses from chat response`)
         }
         setLoading(false)
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
