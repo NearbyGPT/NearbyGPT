@@ -23,6 +23,20 @@ export interface BackendPOIResponse {
   count: number
 }
 
+export interface ChatBusinessFound {
+  id: string
+  name: string
+  type: string
+  location: {
+    latitude: number
+    longitude: number
+    address: string
+    city: string
+  }
+  rating?: number | null
+  quick_info?: string
+}
+
 /**
  * Map business type to emoji icon
  */
@@ -125,6 +139,27 @@ const transformBackendPOI = (backendPOI: BackendPOI): POI => {
     icon: getIconForType(type),
     coordinates: [longitude, latitude], // GeoJSON format: [longitude, latitude]
     address: `${location.address}, ${location.city}, ${location.state}`,
+    priceLevel: quick_info?.trim() || undefined,
+  }
+}
+
+/**
+ * Transform chat businesses_found to frontend POI format
+ */
+export const transformChatBusinessToPOI = (business: ChatBusinessFound): POI => {
+  const { id, name, type, location, rating, quick_info } = business
+
+  const latitude = location.latitude
+  const longitude = location.longitude
+
+  return {
+    id,
+    name,
+    type,
+    icon: getIconForType(type),
+    coordinates: [longitude, latitude], // GeoJSON format: [longitude, latitude]
+    address: `${location.address}, ${location.city}`,
+    rating: rating ?? undefined,
     priceLevel: quick_info?.trim() || undefined,
   }
 }
