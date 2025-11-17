@@ -28,6 +28,7 @@ export default function FloatingChat() {
   const flyToLocation = useGeneralStore((s) => s.flyToLocation)
   const setUserLocation = useGeneralStore((s) => s.setUserLocation)
   const userLocation = useGeneralStore((s) => s.userLocation)
+  const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
 
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const bottomRef = useRef<HTMLDivElement | null>(null)
@@ -36,7 +37,8 @@ export default function FloatingChat() {
 
   // load persisted chat
   useEffect(() => {
-    const key = resturantId ? `chat-resturant-${resturantId}` : 'chat-floating'
+    const businessId = activeChatPOI?.id || resturantId
+    const key = businessId ? `chat-business-${businessId}` : 'chat-floating'
     try {
       const saved = localStorage.getItem(key)
       if (saved) {
@@ -50,17 +52,18 @@ export default function FloatingChat() {
     } catch {
       /* ignore */
     }
-  }, [resturantId])
+  }, [activeChatPOI?.id, resturantId])
 
   // persist chat
   useEffect(() => {
-    const key = resturantId ? `chat-resturant-${resturantId}` : 'chat-floating'
+    const businessId = activeChatPOI?.id || resturantId
+    const key = businessId ? `chat-business-${businessId}` : 'chat-floating'
     try {
       localStorage.setItem(key, JSON.stringify({ messages, sessionId }))
     } catch {
       /* ignore */
     }
-  }, [messages, sessionId, resturantId])
+  }, [messages, sessionId, activeChatPOI?.id, resturantId])
 
   // scroll to show the user's last message and the assistant reply below it
   useEffect(() => {
@@ -105,15 +108,30 @@ export default function FloatingChat() {
     try {
       const url = `${process.env.NEXT_PUBLIC_BACKEND_API_URL}/chat`
 
-      const body: { message: string; resturantId?: string; session_id?: string; latitude?: number; longitude?: number } = {
+      const body: {
+        message: string
+        business_id?: string
+        session_id?: string
+        latitude?: number
+        longitude?: number
+        radius_meters?: number
+        user_id?: string
+      } = {
         message: newMessage.text,
       }
-      if (resturantId) body.resturantId = resturantId
+
+      // Use activeChatPOI id as business_id, fallback to resturantId from URL params
+      const businessId = activeChatPOI?.id || resturantId
+      if (businessId) body.business_id = businessId
+
       if (sessionId) body.session_id = sessionId
       if (userLocation) {
         body.latitude = userLocation.latitude
         body.longitude = userLocation.longitude
+        body.radius_meters = 5000 // Default radius in meters
       }
+      // Add user_id if needed (placeholder for now)
+      body.user_id = 'user-default'
 
       const res = await fetch(url, {
         method: 'POST',
