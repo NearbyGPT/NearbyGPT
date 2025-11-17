@@ -12,6 +12,7 @@ import {
   transformChatBusinessToPOI,
   type ChatBusinessFound,
 } from '@/lib/backendPoiApi'
+import { useAuth } from '@clerk/nextjs'
 
 mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_ACCESS_TOKEN as string
 
@@ -67,6 +68,7 @@ const createMessageId = () => {
 }
 
 export default function Map() {
+  const { getToken } = useAuth()
   const mapContainer = useRef<HTMLDivElement | null>(null)
   const mapRef = useRef<mapboxgl.Map | null>(null)
   const userLocationRef = useRef<{ latitude: number; longitude: number } | null>(null)
@@ -132,6 +134,7 @@ export default function Map() {
   const handleSearchSubmit = useCallback(
     async (query: string) => {
       if (!query) return
+      const token = await getToken()
 
       setLoading(true)
 
@@ -165,7 +168,6 @@ export default function Map() {
         const payload = {
           message: query,
           viewport,
-          // session_id: 'user-123',
           active_filters: {},
           ...(userLocation && {
             latitude: userLocation.latitude,
@@ -178,6 +180,7 @@ export default function Map() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
           },
           body: JSON.stringify(payload),
         })
