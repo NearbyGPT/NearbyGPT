@@ -6,7 +6,7 @@ type BottomSheetProps = {
   children: React.ReactNode
   /** translateY snap points in %, e.g. [100 (hidden), 65 (peek), 0 (open)] */
   snapPoints?: number[]
-  /** initial translateY in %, must be one of snapPoints */
+  /** initial translateY in %, should be one of snapPoints */
   initialSnap?: number
   /** called when sheet snaps to fully hidden (100%) */
   onClose?: () => void
@@ -24,6 +24,8 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   const [translateY, _setTranslateY] = useState(initialSnap)
   const translateYRef = useRef(initialSnap)
 
+  const [isDragging, setIsDragging] = useState(false)
+
   const draggingRef = useRef(false)
   const startYRef = useRef(0)
   const startTranslateYRef = useRef(initialSnap)
@@ -37,7 +39,14 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
   }
 
   const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    // Only start drag with primary button / touch
+    if (e.button !== 0) return
+
+    e.preventDefault() // stop text selection / scroll
+    ;(e.target as HTMLElement).setPointerCapture(e.pointerId)
+
     draggingRef.current = true
+    setIsDragging(true)
     startYRef.current = e.clientY
     startTranslateYRef.current = translateYRef.current
   }
@@ -55,6 +64,7 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
     const handlePointerUp = () => {
       if (!draggingRef.current) return
       draggingRef.current = false
+      setIsDragging(false)
 
       // snap to nearest snap point
       const current = translateYRef.current
@@ -95,17 +105,20 @@ export const BottomSheet: React.FC<BottomSheetProps> = ({
           openness > 0.05 ? 'pointer-events-auto' : 'pointer-events-none'
         }`}
         style={{ opacity: openness * 0.5 }}
-        onClick={() => setTranslateY(100)} // tap outside to close
+        onClick={() => {
+          setTranslateY(100)
+          if (onClose) onClose()
+        }}
       />
 
       {/* Sheet */}
       <div
-        className="fixed inset-x-0 bottom-0 flex flex-col rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.2)] transition-transform duration-200 will-change-transform"
+        className="fixed inset-x-0 bottom-0 flex flex-col rounded-t-2xl bg-white shadow-[0_-4px_24px_rgba(0,0,0,0.2)] will-change-transform"
         style={{
-          // tweak height for mobile if you want, e.g. "75vh"
           height: '80vh',
           transform: `translateY(${translateY}%)`,
-          touchAction: 'none',
+          transition: isDragging ? 'none' : 'transform 0.2s ease-out',
+          touchAction: 'none', // don't let browser handle pan
         }}
       >
         {/* Drag handle area */}
