@@ -1,5 +1,6 @@
 import Map from '@/components/Map'
 import { SignedIn, UserButton } from '@clerk/nextjs'
+import Link from 'next/link'
 
 export default function Home() {
   return (
@@ -8,6 +9,12 @@ export default function Home() {
         <SignedIn>
           <UserButton />
         </SignedIn>
+
+        <div className=" mt-4">
+          <Link href={'/restaurants/manage'} prefetch={false} className="bg-gray-300 text-black rounded p-2">
+            Add restaurant
+          </Link>
+        </div>
       </div>
       <Map />
     </div>

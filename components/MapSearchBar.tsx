@@ -29,12 +29,10 @@ export default function MapSearchBar({
   onClearChat,
   onSubmit,
   messages = [],
-  isExpanded = true,
   onExpand,
 }: MapSearchBarProps) {
   const chatLabel = activeChatName ? `Chatting with ${activeChatName}` : null
   const hasMessages = messages.length > 0
-  const lastMessage = hasMessages ? messages[messages.length - 1] : null
 
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
@@ -45,13 +43,17 @@ export default function MapSearchBar({
   // --- Constants ---
   const INPUT_BAR_HEIGHT = 60
   const MID_HEIGHT_RATIO = 0.6
-  const BOTTOM_OFFSET = window.innerHeight * 0.02 // 2% of viewport height
 
   // --- State ---
   const [heightPx, setHeightPx] = useState<number>(0)
-  const [isMinimized, setIsMinimized] = useState<boolean>(false)
+  const [isMinimized, setIsMinimized] = useState<boolean>(true)
   const sheetRef = useRef<HTMLDivElement | null>(null)
   const scrollRef = useRef<HTMLDivElement | null>(null)
+  const [bottomOffset, setBottomOffset] = useState(16)
+
+  useEffect(() => {
+    setBottomOffset(window.innerHeight * 0.02) // 2% of viewport height
+  }, [])
 
   const draggingRef = useRef<{
     active: boolean
@@ -198,7 +200,6 @@ export default function MapSearchBar({
     }
   }, [])
 
-  // --- Conditional rendering ---
   if (isMinimized) {
     return (
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[90%] max-w-[700px] z-20 pointer-events-auto">
@@ -225,14 +226,13 @@ export default function MapSearchBar({
     )
   }
 
-  // --- Full chat render ---
   return (
     <div className="fixed inset-0 pointer-events-none z-20 flex items-end justify-center">
       <div
         ref={sheetRef}
         className="absolute bg-white shadow-xl rounded-2xl flex flex-col overflow-hidden pointer-events-auto"
         style={{
-          top: `calc(100vh - ${heightPx}px - ${BOTTOM_OFFSET}px)`,
+          top: `calc(100vh - ${heightPx}px - ${bottomOffset}px)`,
           height: `${heightPx}px`,
           width: 'min(90%, 700px)',
           minWidth: '50%',
