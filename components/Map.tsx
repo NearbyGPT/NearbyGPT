@@ -287,7 +287,7 @@ export default function Map() {
         }
       )
     }
-  }, [setUserLocation, userLocation])
+  }, [])
 
   // Filter POIs when search query changes (with debouncing)
   useEffect(() => {
@@ -308,7 +308,7 @@ export default function Map() {
 
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/basic-v9',
+      style: 'mapbox://styles/mapbox/basic-v9?optimize=true',
       center: [29.9187, 31.2001],
       zoom: 15,
       attributionControl: false,
