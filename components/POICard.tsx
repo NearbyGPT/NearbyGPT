@@ -1,23 +1,11 @@
 'use client'
 
 import { X, MapPin, Clock, MessageCircle } from 'lucide-react'
-import useGeneralStore from '@/store/generalStore'
 import { cn } from '@/lib/utils'
+import useGeneralStore from '@/store/generalStore'
+import type { POI } from '@/types/poi'
 
-export interface POI {
-  id: string
-  name: string
-  type: string
-  icon: string
-  coordinates: [number, number]
-  address?: string
-  rating?: number
-  priceLevel?: string
-  hours?: string
-  description?: string
-}
-
-interface POICardProps {
+type POICardProps = {
   poi: POI
   onClose: () => void
 }

@@ -1,4 +1,4 @@
-import { POI } from '@/components/POICard'
+import type { POI } from '@/types/poi'
 
 export interface BackendPOI {
   id: string
