@@ -2,11 +2,17 @@ import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 import { POI } from '@/components/POICard'
 
+export type ChatContext = 'map' | 'poi'
+
 export interface ChatMessage {
   id: string
   role: 'user' | 'assistant'
   text: string
+  context?: ChatContext
+  poiId?: string
 }
+
+export type ViewMode = 'map' | 'poi-min' | 'poi-max'
 
 interface GeneralState {
   flyToLocation?: (lng: number, lat: number) => void
@@ -24,6 +30,8 @@ interface GeneralState {
   clearChatMessages: () => void
   loading: boolean
   setLoading: (value: boolean) => void
+  viewMode: ViewMode
+  setViewMode: (mode: ViewMode) => void
 }
 
 const useGeneralStore = create<GeneralState>()(
@@ -44,6 +52,8 @@ const useGeneralStore = create<GeneralState>()(
       clearChatMessages: () => set({ chatMessages: [] }),
       loading: false,
       setLoading: (value) => set({ loading: value }),
+      viewMode: 'map' as ViewMode,
+      setViewMode: (mode) => set({ viewMode: mode }),
     }),
     {
       name: 'general-store',

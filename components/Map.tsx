@@ -4,8 +4,10 @@ import { useEffect, useRef, useState, useMemo, useCallback } from 'react'
 import mapboxgl, { GeoJSONSource } from 'mapbox-gl'
 import MapSearchBar from './MapSearchBar'
 import POICard, { POI } from './POICard'
-import useGeneralStore from '@/store/generalStore'
+import POIDetailsSheet from './POIDetailsSheet'
+import useGeneralStore, { ViewMode } from '@/store/generalStore'
 import { fetchPOIsFromBackend, filterPOIsByQuery, filterPOIsByLocation } from '@/lib/backendPoiApi'
+import { cn } from '@/lib/utils'
 import { useAuth } from '@clerk/nextjs'
 import { BackendBusiness } from '@/lib/types/restaurant'
 
@@ -62,6 +64,8 @@ const createMessageId = () => {
   return `msg-${Date.now()}-${Math.random().toString(16).slice(2)}`
 }
 
+const MAP_PEEK_HEIGHT = '22vh'
+
 export default function Map() {
   const { getToken } = useAuth()
   const mapContainer = useRef<HTMLDivElement | null>(null)
@@ -80,6 +84,8 @@ export default function Map() {
   const chatMessages = useGeneralStore((s) => s.chatMessages)
   const addChatMessage = useGeneralStore((s) => s.addChatMessage)
   const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
+  const viewMode = useGeneralStore((s) => s.viewMode)
+  const setViewMode = useGeneralStore((s) => s.setViewMode)
 
   const setLoading = useGeneralStore((s) => s.setLoading)
 
@@ -126,7 +132,7 @@ export default function Map() {
     [allPOIs, userLocation]
   )
   const handleSearchSubmit = useCallback(
-    async (query: string) => {
+    async (query: string, context: 'map' | 'poi' = 'map', poiId?: string) => {
       if (!query) return
       const token = await getToken()
 
@@ -138,6 +144,8 @@ export default function Map() {
         id: `${baseMessageId}-user`,
         role: 'user',
         text: query,
+        context,
+        poiId,
       })
 
       const map = mapRef.current
@@ -193,6 +201,8 @@ export default function Map() {
           id: `${baseMessageId}-assistant`,
           role: 'assistant',
           text: data?.message ?? 'Got your request!',
+          context,
+          poiId,
         })
 
         // If backend returned businesses_found, update POIs on map
@@ -227,6 +237,8 @@ export default function Map() {
           id: `${baseMessageId}-assistant`,
           role: 'assistant',
           text: `Sorry, I couldn’t process your request: ${error.message}`,
+          context,
+          poiId,
         })
       }
 
@@ -458,8 +470,10 @@ export default function Map() {
         const properties = feature.properties as { id: string }
 
         const poi = pois.find((p) => p.id === properties.id)
+        console.log('POI clicked:', poi, 'Setting view mode to poi-min')
         if (poi) {
           setSelectedPOI(poi)
+          setViewMode('poi-min')
         }
       }
 
@@ -562,9 +576,34 @@ export default function Map() {
     })
   }, [selectedPOI])
 
+  const handleCloseDetails = () => {
+    setSelectedPOI(null)
+    setViewMode('map')
+  }
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode)
+  }
+
   return (
     <>
-      <div ref={mapContainer} style={{ width: '100vw', height: '100vh' }} />
+      {/* Map Container - adjust height based on view mode */}
+      <div
+        ref={mapContainer}
+        className={cn(
+          'transition-all duration-300 ease-in-out overflow-hidden',
+          viewMode === 'poi-max' ? 'shadow-[0_-6px_20px_rgba(0,0,0,0.25)]' : ''
+        )}
+        style={{
+          height: viewMode === 'poi-max' ? MAP_PEEK_HEIGHT : '100vh',
+          width: '100vw',
+          position: viewMode === 'poi-max' ? 'fixed' : 'relative',
+          bottom: viewMode === 'poi-max' ? '0' : 'auto',
+          zIndex: viewMode === 'poi-max' ? 10 : 'auto',
+        }}
+      />
+
+      {/* Search Bar */}
       <MapSearchBar
         value={searchQuery}
         onChange={setSearchQuery}
@@ -574,12 +613,30 @@ export default function Map() {
           setActiveChatPOI(null)
           clearChatMessages()
         }}
-        onSubmit={handleSearchSubmit}
-        messages={chatMessages}
+        onSubmit={(value) => handleSearchSubmit(value, 'map')}
+        messages={chatMessages.filter((m) => m.context !== 'poi')}
         isExpanded={isChatExpanded}
         onExpand={() => setIsChatExpanded(true)}
+        onCollapseToMap={() => {
+          setSelectedPOI(null)
+          setViewMode('map')
+        }}
       />
-      {selectedPOI && <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />}
+
+      {/* POI Details Sheet */}
+      <POIDetailsSheet
+        poi={selectedPOI}
+        onClose={handleCloseDetails}
+        viewMode={viewMode}
+        onViewModeChange={handleViewModeChange}
+        mapPeekHeight={MAP_PEEK_HEIGHT}
+        onSendMessage={(text) => handleSearchSubmit(text, 'poi', selectedPOI?.id)}
+      />
+
+      {/* Legacy POI Card - fallback */}
+      {selectedPOI && viewMode === 'map' && (
+        <POICard poi={selectedPOI} onClose={() => setSelectedPOI(null)} />
+      )}
     </>
   )
 }
