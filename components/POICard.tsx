@@ -26,6 +26,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
   const activeChatPOI = useGeneralStore((s) => s.activeChatPOI)
   const setActiveChatPOI = useGeneralStore((s) => s.setActiveChatPOI)
   const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
+  const setIsMapSearchMinimized = useGeneralStore((s) => s.setIsMapSearchMinimized)
   const isChattingWithPOI = activeChatPOI?.id === poi.id
 
   const handleChatClick = () => {
@@ -34,7 +35,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
       clearChatMessages()
       return
     }
-
+    setIsMapSearchMinimized(false)
     clearChatMessages()
     setActiveChatPOI(poi)
     onClose()
@@ -88,9 +89,7 @@ export default function POICard({ poi, onClose }: POICardProps) {
             </div>
           )}
 
-          {poi.description && (
-            <p className="text-sm text-[var(--color-gray)] mt-3 pt-3 border-t">{poi.description}</p>
-          )}
+          {poi.description && <p className="text-sm text-[var(--color-gray)] mt-3 pt-3 border-t">{poi.description}</p>}
 
           <div className="mt-4 flex flex-col gap-2 sm:flex-row">
             <button
