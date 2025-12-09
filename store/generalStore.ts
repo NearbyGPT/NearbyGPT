@@ -32,6 +32,8 @@ interface GeneralState {
   setLoading: (value: boolean) => void
   viewMode: ViewMode
   setViewMode: (mode: ViewMode) => void
+  isMapSearchMinimized: boolean
+  setIsMapSearchMinimized: (minimized: boolean) => void
 }
 
 const useGeneralStore = create<GeneralState>()(
@@ -54,6 +56,8 @@ const useGeneralStore = create<GeneralState>()(
       setLoading: (value) => set({ loading: value }),
       viewMode: 'map' as ViewMode,
       setViewMode: (mode) => set({ viewMode: mode }),
+      isMapSearchMinimized: true,
+      setIsMapSearchMinimized: (minimized) => set({ isMapSearchMinimized: minimized }),
     }),
     {
       name: 'general-store',

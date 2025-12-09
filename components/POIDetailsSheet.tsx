@@ -157,7 +157,7 @@ const POIDetailsSheet: React.FC<POIDetailsSheetProps> = ({
   }, [isDragging, dragStartY, dragStartMode, onViewModeChange])
 
   // Debug logging
-  console.log('POIDetailsSheet render:', { poi: poi?.name, viewMode })
+  // console.log('POIDetailsSheet render:', { poi: poi?.name, viewMode })
 
   if (!poi) return null
 
