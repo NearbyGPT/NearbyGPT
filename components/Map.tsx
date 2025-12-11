@@ -89,6 +89,10 @@ export default function Map() {
   const skipSearchSyncRef = useRef(false)
   const [isChatExpanded, setIsChatExpanded] = useState(true)
 
+  // Store conversation_id per business
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [businessIdWithConversation, setBusinessIdWithConversation] = useState<string | null>(null)
+
   // Fetch all POIs from backend on mount
   useEffect(() => {
     const loadAllPOIs = async () => {
@@ -104,6 +108,14 @@ export default function Map() {
 
     loadAllPOIs()
   }, [])
+
+  // Reset conversation when switching to a different business
+  useEffect(() => {
+    if (activeChatPOI?.id !== businessIdWithConversation) {
+      setConversationId(null)
+      setBusinessIdWithConversation(null)
+    }
+  }, [activeChatPOI, businessIdWithConversation])
 
   // Filter POIs based on search query and user location
   const filterPOIs = useCallback(
@@ -127,8 +139,8 @@ export default function Map() {
   )
 
   const handleSearchSubmit = useCallback(
-    async (query: string, imageFile?: File) => {
-      if (!query && !imageFile) return
+    async (query: string, file?: File) => {
+      if (!query && !file) return
 
       const token = await getToken()
       setLoading(true)
@@ -137,8 +149,10 @@ export default function Map() {
 
       // Create user message display text
       let displayText = query
-      if (imageFile) {
-        displayText = query ? `${query} [Image]` : '[Image]'
+      if (file) {
+        displayText = query
+          ? `${query} [${file.type.startsWith('image/') ? 'Image' : 'PDF'}]`
+          : `[${file.type.startsWith('image/') ? 'Image' : 'PDF'}]`
       }
 
       addChatMessage({
@@ -174,9 +188,14 @@ export default function Map() {
           formData.append('message', query)
         }
 
-        // Add image if there is one
-        if (imageFile) {
-          formData.append('image', imageFile)
+        // Add file if there is one
+        if (file) {
+          formData.append('image', file)
+        }
+
+        // Add conversation_id if we have one for this business
+        if (conversationId && activeChatPOI?.id === businessIdWithConversation) {
+          formData.append('conversation_id', conversationId)
         }
 
         // Add viewport data
@@ -222,6 +241,12 @@ export default function Map() {
           text: data?.message ?? 'Got your request!',
         })
 
+        // Update conversation_id if returned by backend
+        if (data?.conversation_id && activeChatPOI) {
+          setConversationId(data.conversation_id)
+          setBusinessIdWithConversation(activeChatPOI.id)
+        }
+
         // If backend returned businesses_found, update POIs on map
         if (data?.businesses_found && Array.isArray(data.businesses_found)) {
           const filtered: POI[] = data.businesses_found.map((b: BackendBusiness) => ({
@@ -261,7 +286,17 @@ export default function Map() {
       setSearchQuery('')
       setIsChatExpanded(true)
     },
-    [setLoading, addChatMessage, setSearchQuery, userLocation, activeChatPOI, getToken, setIsChatExpanded]
+    [
+      setLoading,
+      addChatMessage,
+      setSearchQuery,
+      userLocation,
+      activeChatPOI,
+      getToken,
+      setIsChatExpanded,
+      conversationId,
+      businessIdWithConversation,
+    ]
   )
 
   // Convert POIs to GeoJSON
@@ -600,6 +635,9 @@ export default function Map() {
         onClearChat={() => {
           setActiveChatPOI(null)
           clearChatMessages()
+          // reset conversation when clearing chat
+          setConversationId(null)
+          setBusinessIdWithConversation(null)
         }}
         onSubmit={handleSearchSubmit}
         messages={chatMessages}
