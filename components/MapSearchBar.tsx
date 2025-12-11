@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState, useCallback } from 'react'
-import { Search, X, ArrowUpCircle, Plus } from 'lucide-react'
+import { Search, X, ArrowUpCircle, Plus, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
 import useGeneralStore from '@/store/generalStore'
@@ -15,7 +15,7 @@ interface MapSearchBarProps {
   placeholder?: string
   activeChatName?: string
   onClearChat?: () => void
-  onSubmit?: (value: string, imageFile?: File) => void // Updated to accept image file
+  onSubmit?: (value: string, file?: File) => void // Updated to accept any file
   messages?: ChatMessage[]
   isExpanded?: boolean
   onExpand?: () => void
@@ -53,10 +53,10 @@ export default function MapSearchBar({
   const scrollRef = useRef<HTMLDivElement | null>(null)
   const [bottomOffset, setBottomOffset] = useState(16)
 
-  // Image upload state
-  const [selectedImage, setSelectedImage] = useState<File | null>(null)
+  // File upload state (now supports both images and PDFs)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
-  const [imageUploadError, setImageUploadError] = useState<string | null>(null)
+  const [fileUploadError, setFileUploadError] = useState<string | null>(null)
 
   useEffect(() => {
     setBottomOffset(window.innerHeight * 0.02) // 2% of viewport height
@@ -71,45 +71,56 @@ export default function MapSearchBar({
 
   const showMessages = !isMapSearchMinimized && hasMessages
 
-  // --- Image Upload Functions ---
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+  // --- File Upload Functions ---
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] ?? null
     if (!file) return
 
     // Validate file type
-    if (!file.type.startsWith('image/')) {
-      setImageUploadError('Please select an image file')
+    const isImage = file.type.startsWith('image/')
+    const isPDF = file.type === 'application/pdf'
+
+    if (!isImage && !isPDF) {
+      setFileUploadError('Please select an image or PDF file')
       return
     }
 
-    // Validate file size (5MB limit)
+    // Validate file size (5MB limit for both)
     if (file.size > 5 * 1024 * 1024) {
-      setImageUploadError('Image size should be less than 5MB')
+      setFileUploadError('File size should be less than 5MB')
       return
     }
 
-    setSelectedImage(file)
-    setImageUploadError(null)
+    setSelectedFile(file)
+    setFileUploadError(null)
 
-    // Create preview
-    const url = URL.createObjectURL(file)
-    // Revoke previous if any
-    if (previewUrl) {
-      URL.revokeObjectURL(previewUrl)
+    // Create preview for images only
+    if (isImage) {
+      const url = URL.createObjectURL(file)
+      // Revoke previous if any
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+      }
+      setPreviewUrl(url)
+    } else {
+      // For PDFs, clear any previous image preview
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl)
+        setPreviewUrl(null)
+      }
     }
-    setPreviewUrl(url)
 
     // Reset input value
     e.currentTarget.value = ''
   }
 
-  const handleRemoveImage = () => {
-    setSelectedImage(null)
+  const handleRemoveFile = () => {
+    setSelectedFile(null)
     if (previewUrl) {
       URL.revokeObjectURL(previewUrl)
       setPreviewUrl(null)
     }
-    setImageUploadError(null)
+    setFileUploadError(null)
   }
 
   // Clean up object URLs on unmount
@@ -229,15 +240,15 @@ export default function MapSearchBar({
     event.preventDefault()
     const trimmedValue = value.trim()
 
-    // If there's no text and no image, do nothing
-    if (!trimmedValue && !selectedImage) return
+    // If there's no text and no file, do nothing
+    if (!trimmedValue && !selectedFile) return
 
-    // Call the onSubmit handler with both text and image file
-    onSubmit?.(trimmedValue, selectedImage || undefined)
+    // Call the onSubmit handler with both text and file
+    onSubmit?.(trimmedValue, selectedFile || undefined)
 
-    // Clear the input and image state
+    // Clear the input and file state
     onChange('')
-    handleRemoveImage()
+    handleRemoveFile()
   }
 
   // --- Focus handler ---
@@ -281,7 +292,7 @@ export default function MapSearchBar({
             type="submit"
             className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white"
             aria-label="Send search"
-            disabled={!value.trim() && !selectedImage}
+            disabled={!value.trim() && !selectedFile}
           >
             <ArrowUpCircle className="h-4 w-4" />
             <span className="hidden sm:inline">Send</span>
@@ -318,27 +329,40 @@ export default function MapSearchBar({
           <div className="w-[40px] h-2 bg-gray-500 rounded-full" />
         </div>
 
-        {/* Image preview and upload error */}
-        {(previewUrl || imageUploadError) && (
+        {/* File preview and upload error */}
+        {(selectedFile || fileUploadError) && (
           <div className="px-4 pb-2 pt-2">
-            {previewUrl && (
+            {selectedFile && (
               <div className="mb-2 flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
-                <div className="relative w-16 h-16 rounded-md overflow-hidden border border-gray-300">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={previewUrl} alt="selected preview" className="object-cover w-full h-full" />
+                <div className="relative w-16 h-16 rounded-md overflow-hidden border border-gray-300 flex items-center justify-center bg-gray-100">
+                  {previewUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={previewUrl} alt="selected preview" className="object-cover w-full h-full" />
+                  ) : selectedFile.type === 'application/pdf' ? (
+                    <div className="flex flex-col items-center justify-center p-2">
+                      <FileText className="h-8 w-8 text-red-500" />
+                      <span className="text-xs text-gray-600 mt-1">PDF</span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center p-2">
+                      <FileText className="h-8 w-8 text-gray-400" />
+                    </div>
+                  )}
                 </div>
                 <div className="flex-1">
-                  <div className="text-xs text-gray-600 truncate">{selectedImage?.name}</div>
+                  <div className="text-xs text-gray-600 truncate">{selectedFile.name}</div>
                   <div className="text-xs text-gray-500">
-                    {(selectedImage?.size || 0) / 1024 / 1024 < 1
-                      ? `${((selectedImage?.size || 0) / 1024).toFixed(1)} KB`
-                      : `${((selectedImage?.size || 0) / 1024 / 1024).toFixed(1)} MB`}
+                    {selectedFile.size / 1024 / 1024 < 1
+                      ? `${(selectedFile.size / 1024).toFixed(1)} KB`
+                      : `${(selectedFile.size / 1024 / 1024).toFixed(1)} MB`}
+                    {selectedFile.type === 'application/pdf' && ' • PDF'}
+                    {selectedFile.type.startsWith('image/') && ' • Image'}
                   </div>
                 </div>
                 <button
                   type="button"
                   className="text-xs underline text-gray-700 hover:text-red-600"
-                  onClick={handleRemoveImage}
+                  onClick={handleRemoveFile}
                   disabled={loading}
                 >
                   Remove
@@ -346,9 +370,9 @@ export default function MapSearchBar({
               </div>
             )}
 
-            {imageUploadError && (
+            {fileUploadError && (
               <div className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg">
-                <div className="text-xs text-red-600">{imageUploadError}</div>
+                <div className="text-xs text-red-600">{fileUploadError}</div>
               </div>
             )}
           </div>
@@ -395,23 +419,23 @@ export default function MapSearchBar({
           <form onSubmit={handleSubmit} className="flex items-center gap-3 mt-4">
             <Search className="h-5 w-5 flex-shrink-0 text-[var(--color-primary)]" />
 
-            {/* Hidden file input for image upload */}
+            {/* Hidden file input for file upload (images and PDFs) */}
             <input
               id="mapsearch-image-input"
               type="file"
-              accept="image/*"
-              onChange={handleImageSelect}
+              accept="image/*,.pdf"
+              onChange={handleFileSelect}
               className="hidden"
             />
 
-            {/* Image upload button - only show when chatting with a business */}
+            {/* File upload button - only show when chatting with a business */}
             {activeChatPOI?.id && (
               <button
                 type="button"
                 onClick={() => document.getElementById('mapsearch-image-input')?.click()}
                 className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
                 disabled={loading}
-                aria-label="Upload image"
+                aria-label="Upload file"
               >
                 <Plus className="h-4 w-4" />
               </button>
@@ -430,7 +454,7 @@ export default function MapSearchBar({
               type="submit"
               className="flex items-center gap-2 rounded-full bg-[var(--color-primary)] px-4 py-2 text-sm font-semibold text-white disabled:opacity-50 disabled:cursor-not-allowed"
               aria-label="Send search"
-              disabled={(!value.trim() && !selectedImage) || loading}
+              disabled={(!value.trim() && !selectedFile) || loading}
             >
               <ArrowUpCircle className="h-4 w-4" />
               <span className="hidden sm:inline">Send</span>
