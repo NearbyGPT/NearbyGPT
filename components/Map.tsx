@@ -89,9 +89,7 @@ export default function Map() {
   const skipSearchSyncRef = useRef(false)
   const [isChatExpanded, setIsChatExpanded] = useState(true)
 
-  // Store conversation_id per business
   const [conversationId, setConversationId] = useState<string | null>(null)
-  const [businessIdWithConversation, setBusinessIdWithConversation] = useState<string | null>(null)
 
   // Fetch all POIs from backend on mount
   useEffect(() => {
@@ -108,14 +106,6 @@ export default function Map() {
 
     loadAllPOIs()
   }, [])
-
-  // Reset conversation when switching to a different business
-  useEffect(() => {
-    if (activeChatPOI?.id !== businessIdWithConversation) {
-      setConversationId(null)
-      setBusinessIdWithConversation(null)
-    }
-  }, [activeChatPOI, businessIdWithConversation])
 
   // Filter POIs based on search query and user location
   const filterPOIs = useCallback(
@@ -193,8 +183,8 @@ export default function Map() {
           formData.append('image', file)
         }
 
-        // Add conversation_id if we have one for this business
-        if (conversationId && activeChatPOI?.id === businessIdWithConversation) {
+        // Add conversation_id if we have one to keep chat context
+        if (conversationId) {
           formData.append('conversation_id', conversationId)
         }
 
@@ -242,9 +232,8 @@ export default function Map() {
         })
 
         // Update conversation_id if returned by backend
-        if (data?.conversation_id && activeChatPOI) {
+        if (data?.conversation_id) {
           setConversationId(data.conversation_id)
-          setBusinessIdWithConversation(activeChatPOI.id)
         }
 
         // If backend returned businesses_found, update POIs on map
@@ -295,7 +284,6 @@ export default function Map() {
       getToken,
       setIsChatExpanded,
       conversationId,
-      businessIdWithConversation,
     ]
   )
 
@@ -637,7 +625,6 @@ export default function Map() {
           clearChatMessages()
           // reset conversation when clearing chat
           setConversationId(null)
-          setBusinessIdWithConversation(null)
         }}
         onSubmit={handleSearchSubmit}
         messages={chatMessages}
