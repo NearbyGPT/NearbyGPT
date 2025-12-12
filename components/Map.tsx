@@ -218,7 +218,7 @@ export default function Map() {
         }
 
         // Send request with FormData
-        const response = await fetch('https://api.nearbygpt.app/api/chat/', {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_API_URL}/api/chat/`, {
           method: 'POST',
           headers: {
             Authorization: `Bearer ${token}`,

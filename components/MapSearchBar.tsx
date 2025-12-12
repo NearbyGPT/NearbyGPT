@@ -1,6 +1,6 @@
 'use client'
 
-import { FormEvent, useEffect, useRef, useState, useCallback } from 'react'
+import { FormEvent, useEffect, useRef, useState, useCallback, useMemo } from 'react'
 import { Search, X, ArrowUpCircle, Plus, FileText } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
@@ -70,6 +70,7 @@ export default function MapSearchBar({
   }>({ active: false, startY: 0, startHeight: 0, committedHeight: 0 })
 
   const showMessages = !isMapSearchMinimized && hasMessages
+  const remarkPlugins = useMemo(() => [remarkGfm, remarkBreaks], [])
 
   // --- File Upload Functions ---
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -153,6 +154,39 @@ export default function MapSearchBar({
     if (!showMessages) return
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
   }, [showMessages, messages.length])
+
+  const renderedMessages = useMemo(() => {
+    if (!showMessages) return null
+
+    return (
+      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pr-1">
+        {messages.map((message) => (
+          <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
+            <div
+              className={cn(
+                'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm prose prose-sm',
+                message.role === 'user'
+                  ? 'bg-[var(--color-primary)] text-white'
+                  : 'bg-[var(--color-background-light)] text-[var(--color-dark)]'
+              )}
+            >
+              <ReactMarkdown remarkPlugins={remarkPlugins}>{message.text}</ReactMarkdown>
+            </div>
+          </div>
+        ))}
+        {loading && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1 bg-gray-600 rounded-full px-3 py-2">
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '-0.3s' }} />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '-0.15s' }} />
+              <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+    )
+  }, [messages, loading, remarkPlugins, showMessages])
 
   // --- Helpers ---
   const clampPx = useCallback((px: number) => {
@@ -380,40 +414,7 @@ export default function MapSearchBar({
 
         {/* Chat content */}
         <div className="rounded-2xl px-4 py-4 sm:px-5 flex-1 flex flex-col justify-end h-full">
-          {showMessages && (
-            <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-3 pr-1">
-              {messages.map((message) => (
-                <div key={message.id} className={cn('flex', message.role === 'user' ? 'justify-end' : 'justify-start')}>
-                  <div
-                    className={cn(
-                      'max-w-[85%] rounded-2xl px-4 py-2 text-sm shadow-sm prose prose-sm',
-                      message.role === 'user'
-                        ? 'bg-[var(--color-primary)] text-white'
-                        : 'bg-[var(--color-background-light)] text-[var(--color-dark)]'
-                    )}
-                  >
-                    <ReactMarkdown remarkPlugins={[remarkGfm, remarkBreaks]}>{message.text}</ReactMarkdown>
-                  </div>
-                </div>
-              ))}
-              {loading && (
-                <div className="flex justify-start">
-                  <div className="flex items-center gap-1 bg-gray-600 rounded-full px-3 py-2">
-                    <span
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '-0.3s' }}
-                    />
-                    <span
-                      className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                      style={{ animationDelay: '-0.15s' }}
-                    />
-                    <span className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-          )}
+          {renderedMessages}
 
           {/* Input bar */}
           <form onSubmit={handleSubmit} className="flex items-center gap-3 mt-4">
