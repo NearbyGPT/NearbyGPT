@@ -319,7 +319,7 @@ export default function MapSearchBar({
       <div className="fixed bottom-4 left-1/2 -translate-x-1/2 w-[92%] max-w-[720px] z-20 pointer-events-auto">
         <form
           onSubmit={handleSubmit}
-          className="flex w-full items-center gap-3 bg-white/90 backdrop-blur-xl shadow-[0_14px_50px_rgba(0,0,0,0.18)] border border-white/70 rounded-full px-3 py-2"
+          className="flex w-full items-center gap-2 bg-white/90 backdrop-blur-xl shadow-[0_14px_50px_rgba(0,0,0,0.18)] border border-white/70 rounded-full px-3 py-2"
         >
           <input
             id="mapsearch-image-input"
@@ -366,7 +366,7 @@ export default function MapSearchBar({
         style={{
           top: `calc(100vh - ${heightPx}px - ${bottomOffset}px)`,
           height: `${heightPx}px`,
-          width: 'min(90%, 700px)',
+          width: 'min(99%, 700px)',
           minWidth: '50%',
           transition: draggingRef.current.active ? 'none' : 'transform 180ms ease, height 200ms ease',
           transform: 'translateY(0)',
