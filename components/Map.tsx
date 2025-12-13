@@ -80,6 +80,7 @@ export default function Map() {
   const chatMessages = useGeneralStore((s) => s.chatMessages)
   const addChatMessage = useGeneralStore((s) => s.addChatMessage)
   const clearChatMessages = useGeneralStore((s) => s.clearChatMessages)
+  const startNewConversation = useGeneralStore((s) => s.startNewConversation)
 
   const setLoading = useGeneralStore((s) => s.setLoading)
 
@@ -624,6 +625,10 @@ export default function Map() {
           setActiveChatPOI(null)
           clearChatMessages()
           // reset conversation when clearing chat
+          setConversationId(null)
+        }}
+        onNewConversation={() => {
+          startNewConversation()
           setConversationId(null)
         }}
         onSubmit={handleSearchSubmit}

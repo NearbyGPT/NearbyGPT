@@ -28,6 +28,7 @@ interface GeneralState {
   chatMessages: ChatMessage[]
   addChatMessage: (message: ChatMessage) => void
   clearChatMessages: () => void
+  startNewConversation: () => void
   loading: boolean
   setLoading: (value: boolean) => void
   viewMode: ViewMode
@@ -52,6 +53,7 @@ const useGeneralStore = create<GeneralState>()(
       chatMessages: [],
       addChatMessage: (message) => set((state) => ({ chatMessages: [...state.chatMessages, message] })),
       clearChatMessages: () => set({ chatMessages: [] }),
+      startNewConversation: () => set({ chatMessages: [], activeChatPOI: null, searchQuery: '' }),
       loading: false,
       setLoading: (value) => set({ loading: value }),
       viewMode: 'map' as ViewMode,

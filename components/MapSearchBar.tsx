@@ -1,7 +1,7 @@
 'use client'
 
 import { FormEvent, useEffect, useRef, useState, useCallback, useMemo } from 'react'
-import { Search, X, ArrowUpCircle, Plus, FileText } from 'lucide-react'
+import { Search, X, ArrowUpCircle, Plus, FileText, MessageSquarePlus } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ChatMessage } from '@/store/generalStore'
 import useGeneralStore from '@/store/generalStore'
@@ -15,6 +15,7 @@ interface MapSearchBarProps {
   placeholder?: string
   activeChatName?: string
   onClearChat?: () => void
+  onNewConversation?: () => void
   onSubmit?: (value: string, file?: File) => void // Updated to accept any file
   messages?: ChatMessage[]
   isExpanded?: boolean
@@ -27,6 +28,7 @@ export default function MapSearchBar({
   placeholder = 'Search places...',
   activeChatName,
   onClearChat,
+  onNewConversation,
   onSubmit,
   messages = [],
   onExpand,
@@ -414,6 +416,21 @@ export default function MapSearchBar({
 
         {/* Chat content */}
         <div className="rounded-2xl px-4 py-4 sm:px-5 flex-1 flex flex-col justify-end h-full">
+          {/* New Conversation Button - only show when there are messages */}
+          {hasMessages && onNewConversation && (
+            <div className="flex justify-center mb-3">
+              <button
+                type="button"
+                onClick={onNewConversation}
+                className="flex items-center gap-2 px-3 py-2 text-sm text-[var(--color-primary)] bg-[var(--color-primary-soft)] hover:bg-[var(--color-primary-soft)]/80 rounded-full transition-colors"
+                disabled={loading}
+              >
+                <MessageSquarePlus className="h-4 w-4" />
+                <span>New Conversation</span>
+              </button>
+            </div>
+          )}
+
           {renderedMessages}
 
           {/* Input bar */}
