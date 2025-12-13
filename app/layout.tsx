@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: 'Nearby GPT',
-  description: 'Find and talk to your favourite restaurants',
+  title: 'NearbyGPT',
+  description: 'Chat with places nearby.',
 }
 
 export default function RootLayout({
