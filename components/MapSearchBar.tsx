@@ -25,7 +25,7 @@ interface MapSearchBarProps {
 export default function MapSearchBar({
   value,
   onChange,
-  placeholder = 'Search places...',
+  placeholder = 'Ask to filter map...',
   activeChatName,
   onClearChat,
   onNewConversation,

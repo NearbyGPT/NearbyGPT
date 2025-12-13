@@ -619,7 +619,7 @@ export default function Map() {
       <MapSearchBar
         value={searchQuery}
         onChange={setSearchQuery}
-        placeholder="Search places, types, or areas..."
+        placeholder="Ask to filter map..."
         activeChatName={activeChatPOI?.name}
         onClearChat={() => {
           setActiveChatPOI(null)
